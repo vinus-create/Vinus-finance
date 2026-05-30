@@ -205,6 +205,7 @@ Additional rules for bank statements:
 - Set account_name to the bank name (e.g., "Maybank Islamic", "CIMB", "Public Bank")
 - Use the transaction date from the statement, not today
 - For reference numbers in the statement, put them in description
+- DATE FORMAT: Malaysian bank statements use DD/MM/YYYY (e.g. "16/03/2026" = 16th March 2026). Always output as "YYYY-MM-DD" (e.g. "2026-03-16"). NEVER put the day number in the month field.
 
 Return ONLY the JSON object, no markdown, no explanation.`
 }

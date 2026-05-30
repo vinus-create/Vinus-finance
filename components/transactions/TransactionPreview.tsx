@@ -96,6 +96,22 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
     setShowCustomInput(prev => ({ ...prev, [idx]: false }))
   }
 
+  // ── Date sanitizer: fix AI confusion of DD/MM/YYYY → YYYY-DD-MM ──
+  function sanitizeDate(dateStr: string): string {
+    const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (!m) return dateStr
+    const [, year, month, day] = m
+    // If month > 12 but day ≤ 12, AI swapped them — fix it
+    if (parseInt(month) > 12 && parseInt(day) <= 12) {
+      return `${year}-${day}-${month}`
+    }
+    // If both invalid, fall back to today
+    if (parseInt(month) > 12) {
+      return new Date().toISOString().slice(0, 10)
+    }
+    return dateStr
+  }
+
   // ── Save ─────────────────────────────────────────────────
   async function handleSave() {
     setSaving(true)
@@ -131,7 +147,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         income_category: txn.income_category,
         description: txn.description || null,
         merchant_name: txn.merchant_name || null,
-        transaction_date: txn.transaction_date,
+        transaction_date: sanitizeDate(txn.transaction_date),
         account_name: detectedAccount?.institution || txn.account_name,
         is_tax_deductible: txn.is_tax_deductible,
       }))
