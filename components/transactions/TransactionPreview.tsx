@@ -148,7 +148,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         description: txn.description || null,
         merchant_name: txn.merchant_name || null,
         transaction_date: sanitizeDate(txn.transaction_date),
-        account_name: detectedAccount?.institution || txn.account_name,
+        account_name: detectedAccount?.name || txn.account_name,
         is_tax_deductible: txn.is_tax_deductible,
       }))
 

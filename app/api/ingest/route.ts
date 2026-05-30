@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Fallback: match by institution name (first word)
+    // 2. Fallback: match by institution column (first word of bank name)
     if (!matchedId && bankShort) {
       const { data: byBank } = await supabase
         .from('accounts')
@@ -168,6 +168,21 @@ export async function POST(request: NextRequest) {
       if (byBank && byBank.length > 0) {
         matchedId = byBank[0].id
         matchedName = byBank[0].name
+      }
+    }
+
+    // 3. Fallback: match by account name (catches manually-created accounts with no institution field)
+    if (!matchedId && bankShort) {
+      const { data: byName } = await supabase
+        .from('accounts')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .ilike('name', `%${bankShort}%`)
+        .eq('is_active', true)
+        .limit(1)
+      if (byName && byName.length > 0) {
+        matchedId = byName[0].id
+        matchedName = byName[0].name
       }
     }
 
@@ -237,7 +252,7 @@ export async function POST(request: NextRequest) {
         description: t.description || null,
         merchant_name: t.merchant_name || null,
         transaction_date: t.transaction_date,
-        account_name: detectedAccount?.institution || t.account_name,
+        account_name: detectedAccount?.name || t.account_name,
         is_tax_deductible: t.is_tax_deductible,
       }))
 
