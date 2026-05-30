@@ -1,0 +1,253 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { createClient } from '@/lib/supabase/client'
+import { useLang } from '@/lib/i18n/LanguageProvider'
+import { ACCOUNT_TYPE_CONFIG, MY_INSTITUTIONS } from '@/lib/constants/accounts'
+import type { Account, AccountType } from '@/lib/types/app.types'
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  account?: Account
+}
+
+function blank() {
+  return {
+    name: '',
+    account_type: 'bank' as AccountType,
+    institution: '',
+    account_number: '',
+    balance: '',
+    include_in_net_worth: true,
+    notes: '',
+  }
+}
+
+function toForm(a: Account) {
+  return {
+    name: a.name,
+    account_type: a.account_type,
+    institution: a.institution ?? '',
+    account_number: a.account_number ?? '',
+    balance: String(a.balance),
+    include_in_net_worth: a.include_in_net_worth,
+    notes: a.notes ?? '',
+  }
+}
+
+const ACCOUNT_TYPES: AccountType[] = ['bank', 'ewallet', 'investment', 'cash', 'credit_card', 'other']
+
+export default function AddAccountSheet({ open, onOpenChange, account }: Props) {
+  const router = useRouter()
+  const { t } = useLang()
+  const isEdit = !!account
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState(account ? toForm(account) : blank())
+  const [showInstitutions, setShowInstitutions] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setForm(account ? toForm(account) : blank())
+      setShowInstitutions(false)
+    }
+  }, [open, account])
+
+  function set<K extends keyof ReturnType<typeof blank>>(field: K, value: ReturnType<typeof blank>[K]) {
+    setForm(f => ({ ...f, [field]: value }))
+  }
+
+  // Filter institution presets by selected account type
+  const institutionPresets = MY_INSTITUTIONS.filter(i => i.type === form.account_type)
+
+  const typeLabel: Record<AccountType, string> = {
+    bank:        t.account_type_bank,
+    ewallet:     t.account_type_ewallet,
+    investment:  t.account_type_investment,
+    cash:        t.account_type_cash,
+    credit_card: t.account_type_credit,
+    other:       t.account_type_other,
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) { setError(t.form_err_account_name); return }
+    const balance = parseFloat(form.balance || '0')
+
+    setSaving(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error(t.err_session)
+
+      const payload = {
+        name: form.name.trim(),
+        account_type: form.account_type,
+        institution: form.institution.trim() || null,
+        account_number: form.account_number.trim().slice(-4) || null,
+        balance,
+        currency: 'MYR',
+        include_in_net_worth: form.include_in_net_worth,
+        notes: form.notes.trim() || null,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (isEdit && account) {
+        const { error: e } = await supabase.from('accounts').update(payload).eq('id', account.id)
+        if (e) throw new Error(e.message)
+      } else {
+        const { error: e } = await supabase.from('accounts').insert({ ...payload, user_id: user.id, is_active: true })
+        if (e) throw new Error(e.message)
+      }
+
+      onOpenChange(false)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.err_unknown)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[92dvh] overflow-y-auto">
+        <SheetHeader className="px-4 pt-2">
+          <SheetTitle>{isEdit ? t.form_edit_account : t.form_add_account}</SheetTitle>
+        </SheetHeader>
+
+        <div className="px-4 pb-6 mt-3 space-y-4">
+          {/* Account Type */}
+          <div className="space-y-2">
+            <Label className="text-xs">{t.form_account_type_label}</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {ACCOUNT_TYPES.map(type => {
+                const cfg = ACCOUNT_TYPE_CONFIG[type]
+                return (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      set('account_type', type)
+                      set('institution', '') // reset institution on type change
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs border font-medium transition-colors ${
+                      form.account_type === type
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <span>{cfg.emoji}</span>
+                    <span className="truncate">{typeLabel[type]}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Institution quick-pick */}
+          {institutionPresets.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t.form_institution}</Label>
+              <div className="flex flex-wrap gap-2">
+                {institutionPresets.map(inst => (
+                  <button
+                    key={inst.name}
+                    onClick={() => {
+                      set('institution', inst.name)
+                      if (!form.name) set('name', inst.name)
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      form.institution === inst.name
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                        : 'border-border bg-muted hover:bg-muted/70'
+                    }`}
+                  >
+                    {inst.emoji} {inst.name}
+                  </button>
+                ))}
+              </div>
+              <Input
+                placeholder={t.form_institution}
+                value={form.institution}
+                onChange={e => set('institution', e.target.value)}
+                className="h-9 text-sm mt-1"
+              />
+            </div>
+          )}
+
+          {/* Account name */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{t.form_account_name}</Label>
+            <Input
+              placeholder={t.form_account_name_placeholder}
+              value={form.name}
+              onChange={e => set('name', e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          {/* Balance + Account number */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t.form_balance_label} (RM)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={form.balance}
+                onChange={e => set('balance', e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{t.form_account_number}</Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="1234"
+                value={form.account_number}
+                onChange={e => set('account_number', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          {/* Note: for credit cards, negative balance = debt */}
+          {form.account_type === 'credit_card' && (
+            <p className="text-[10px] text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+              💡 Enter a negative balance (e.g. -2500) if you owe money on this card.
+            </p>
+          )}
+
+          {/* Include in net worth toggle */}
+          <label className="flex items-center justify-between p-3 rounded-xl bg-muted cursor-pointer">
+            <span className="text-sm">{t.form_include_net_worth}</span>
+            <div
+              onClick={() => set('include_in_net_worth', !form.include_in_net_worth)}
+              className={`w-11 h-6 rounded-full transition-colors relative ${form.include_in_net_worth ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
+            >
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${form.include_in_net_worth ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <Button
+            className="w-full bg-emerald-500 text-white hover:bg-emerald-600 h-11"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? t.preview_saving : (isEdit ? t.form_update_account : t.form_save_account)}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
