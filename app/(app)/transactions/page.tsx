@@ -31,8 +31,11 @@ export default async function TransactionsPage({ searchParams }: Props) {
     month = m
   }
 
-  const startOfMonth = new Date(year, month - 1, 1).toISOString().slice(0, 10)
-  const endOfMonth = new Date(year, month, 0).toISOString().slice(0, 10)
+  // Build date strings directly — avoid toISOString() which shifts by UTC offset
+  const mm = String(month).padStart(2, '0')
+  const lastDay = new Date(year, month, 0).getDate()
+  const startOfMonth = `${year}-${mm}-01`
+  const endOfMonth = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
 
   const { data: txns } = await supabase
     .from('transactions')
@@ -56,8 +59,11 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
   function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T00:00:00')
-    const todayStr = now.toISOString().slice(0, 10)
-    const yestStr = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10)
+    // Build today/yesterday strings without toISOString() to avoid UTC shift
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const yest = new Date(now); yest.setDate(yest.getDate() - 1)
+    const yestStr = `${yest.getFullYear()}-${pad(yest.getMonth() + 1)}-${pad(yest.getDate())}`
     if (dateStr === todayStr) return t.txn_today
     if (dateStr === yestStr) return t.txn_yesterday
     return d.toLocaleDateString(DATE_LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' })
