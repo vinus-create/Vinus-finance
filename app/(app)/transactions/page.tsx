@@ -4,10 +4,7 @@ import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import MonthNav from '@/components/transactions/MonthNav'
 import TransactionsController from '@/components/transactions/TransactionsController'
-import DeleteTransactionButton from '@/components/transactions/DeleteTransactionButton'
-import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
-import { getCategoryLabel } from '@/lib/utils/category-i18n'
-import type { ExpenseCategory, IncomeCategory } from '@/lib/types/app.types'
+import TransactionRow from '@/components/transactions/TransactionRow'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
@@ -119,36 +116,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
               {/* Transactions for this date */}
               <div className="px-4 space-y-1.5">
-                {groups[dateStr]!.map((txn) => {
-                  const cat = txn.type === 'expense' && txn.expense_category
-                    ? EXPENSE_CATEGORY_MAP[txn.expense_category as ExpenseCategory]
-                    : txn.income_category
-                    ? INCOME_CATEGORY_MAP[txn.income_category as IncomeCategory]
-                    : undefined
-                  const icon = cat?.icon ?? (txn.type === 'income' ? '💰' : txn.type === 'transfer' ? '🔄' : '💸')
-                  const catValue = txn.type === 'expense' ? txn.expense_category : txn.income_category
-                  const label = catValue ? getCategoryLabel(catValue, txn.type, lang) : (txn.type === 'transfer' ? t.preview_transfer : '')
-                  const name = txn.merchant_name ?? txn.description ?? label ?? t.txn_unnamed
-
-                  return (
-                    <div
-                      key={txn.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
-                    >
-                      <span className="text-xl shrink-0">{icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{name}</p>
-                        {label && name !== label && (
-                          <p className="text-xs text-muted-foreground truncate">{label}</p>
-                        )}
-                      </div>
-                      <p className={`text-sm font-semibold shrink-0 ${txn.type === 'income' ? 'text-emerald-600' : 'text-foreground'}`}>
-                        {txn.type === 'income' ? '+' : '−'}RM {Number(txn.amount).toFixed(2)}
-                      </p>
-                      <DeleteTransactionButton id={txn.id} />
-                    </div>
-                  )
-                })}
+                {groups[dateStr]!.map((txn) => (
+                  <TransactionRow key={txn.id} txn={txn} lang={lang} />
+                ))}
               </div>
             </div>
           ))
