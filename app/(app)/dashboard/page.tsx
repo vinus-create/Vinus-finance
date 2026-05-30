@@ -40,8 +40,11 @@ export default async function DashboardPage({ searchParams }: Props) {
     year: 'numeric',
   })
 
-  const startOfMonth = new Date(year, month - 1, 1).toISOString().slice(0, 10)
-  const endOfMonth = new Date(year, month, 0).toISOString().slice(0, 10)
+  // Build date strings directly — avoid toISOString() which shifts by UTC offset
+  const mm = String(month).padStart(2, '0')
+  const lastDay = new Date(year, month, 0).getDate()
+  const startOfMonth = `${year}-${mm}-01`
+  const endOfMonth = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
 
   const { data: txns } = await supabase
     .from('transactions')
