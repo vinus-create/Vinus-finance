@@ -122,6 +122,8 @@ export interface Profile {
   updated_at: string
 }
 
+export type LedgerType = 'personal' | 'business'
+
 export interface Transaction {
   id: string
   user_id: string
@@ -136,6 +138,7 @@ export interface Transaction {
   reference_number: string | null
   account_name: string
   transaction_date: string
+  ledger: LedgerType
   is_tax_deductible: boolean
   tax_relief_id: string | null
   receipt_url: string | null

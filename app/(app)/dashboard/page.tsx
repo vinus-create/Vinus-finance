@@ -48,7 +48,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const { data: txns } = await supabase
     .from('transactions')
-    .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id')
+    .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id, ledger')
     .eq('user_id', user.id)
     .gte('transaction_date', startOfMonth)
     .lte('transaction_date', endOfMonth)
@@ -56,6 +56,14 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const totalExpense = txns?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0
+
+  // Business summary
+  const bizTxns = txns?.filter(t => t.ledger === 'business') ?? []
+  const bizRevenue = bizTxns.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  const bizExpenses = bizTxns.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+  const bizProfit = bizRevenue - bizExpenses
+  const bizMargin = bizRevenue > 0 ? (bizProfit / bizRevenue) * 100 : 0
+  const hasBizData = bizTxns.length > 0
 
   // Top 5 expense categories
   const catSpend: Record<string, number> = {}
@@ -140,6 +148,42 @@ export default async function DashboardPage({ searchParams }: Props) {
           </div>
         )}
       </section>
+
+      {/* Business Summary (only when business transactions exist) */}
+      {hasBizData && (
+        <section className="px-4 mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              🏪 {t.business_title}
+            </h2>
+            <a href="/transactions?ledger=business" className="text-sm text-emerald-600 font-medium">
+              {t.dashboard_view_all}
+            </a>
+          </div>
+          <div className="grid grid-cols-4 gap-2 p-4 rounded-2xl bg-card border border-border">
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t.business_revenue}</p>
+              <p className="text-sm font-bold text-emerald-600">RM {bizRevenue.toFixed(0)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t.business_expenses}</p>
+              <p className="text-sm font-bold">RM {bizExpenses.toFixed(0)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t.business_profit}</p>
+              <p className={`text-sm font-bold ${bizProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                RM {bizProfit.toFixed(0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t.business_margin}</p>
+              <p className={`text-sm font-bold ${bizMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {bizMargin.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Top spending categories */}
       <SpendingBreakdown items={topCategories} total={totalExpense} />

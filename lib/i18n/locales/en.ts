@@ -413,4 +413,32 @@ export const en: Translations = {
   empty_reminders_hint: 'Tap "+ Add" to set a bill reminder.',
   empty_tax: 'No tax reliefs added',
   empty_tax_hint: 'Tap "+ Add" to record your LHDN reliefs.',
+  // ── Business / Ledger ────────────────────────
+  ledger_label: 'Ledger',
+  ledger_personal: 'Personal',
+  ledger_business: 'Business',
+  txn_filter_all: 'All',
+  txn_filter_personal: 'Personal',
+  txn_filter_business: 'Business',
+  business_title: 'Business Summary',
+  business_revenue: 'Revenue',
+  business_expenses: 'Expenses',
+  business_profit: 'Net Profit',
+  business_margin: 'Margin',
+  business_tab: '🏪 Business',
+  // ── Insights / AI Digest ─────────────────────
+  more_insights: 'AI Insights',
+  insights_title: 'AI Insights',
+  digest_generate_btn: '🤖 Roast My Spending',
+  digest_generating: 'Analysing your finances...',
+  digest_last_week: 'Last 7 days',
+  digest_empty: 'No digest yet',
+  digest_empty_hint: 'Tap the button above to get your personalised AI spending analysis.',
+  digest_share_btn: 'Share 😂',
+  // ── Investment Sync ───────────────────────────
+  qa_investment: 'Investment',
+  parser_investment_hint: 'Upload Moomoo, AHAM, or EPF i-Account PDF statement',
+  parser_investment_select: 'Select Investment Statement',
+  // ── WhatsApp ──────────────────────────────────
+  whatsapp_setup_title: 'WhatsApp Bot',
 }

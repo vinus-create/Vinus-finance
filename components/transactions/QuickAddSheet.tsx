@@ -12,10 +12,12 @@ import TextParser from './TextParser'
 import VoiceParser from './VoiceParser'
 import ReceiptParser from './ReceiptParser'
 import PDFParser from './PDFParser'
+import InvestmentParser from './InvestmentParser'
 import TransactionPreview from './TransactionPreview'
 import type { ParsedTransaction } from '@/lib/ai/parser'
 import type { DetectedAccount } from './PDFParser'
 import { useLang } from '@/lib/i18n/LanguageProvider'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   open: boolean
@@ -26,6 +28,7 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
   const [parsed, setParsed] = useState<ParsedTransaction[] | null>(null)
   const [detectedAccount, setDetectedAccount] = useState<DetectedAccount | null>(null)
   const { t } = useLang()
+  const router = useRouter()
 
   function handleParsed(transactions: ParsedTransaction[], acct?: DetectedAccount | null) {
     setParsed(transactions)
@@ -41,6 +44,7 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
     setParsed(null)
     setDetectedAccount(null)
     onOpenChange(false)
+    router.refresh()
   }
 
   // Reset parsed state when sheet closes
@@ -71,7 +75,7 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
           />
         ) : (
           <Tabs defaultValue="text" className="px-4 pb-4 mt-2">
-            <TabsList className="w-full grid grid-cols-4 mb-4 h-auto p-1">
+            <TabsList className="w-full grid grid-cols-5 mb-4 h-auto p-1">
               <TabsTrigger value="text" className="text-xs py-2 flex-col gap-0.5 h-auto">
                 <span>✍️</span>
                 <span>{t.qa_text}</span>
@@ -88,6 +92,10 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
                 <span>📄</span>
                 <span>{t.qa_pdf}</span>
               </TabsTrigger>
+              <TabsTrigger value="investment" className="text-xs py-2 flex-col gap-0.5 h-auto">
+                <span>📈</span>
+                <span>{t.qa_investment}</span>
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="text">
               <TextParser onParsed={handleParsed} />
@@ -100,6 +108,9 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
             </TabsContent>
             <TabsContent value="pdf">
               <PDFParser onParsed={handleParsed} />
+            </TabsContent>
+            <TabsContent value="investment">
+              <InvestmentParser onParsed={() => {}} />
             </TabsContent>
           </Tabs>
         )}

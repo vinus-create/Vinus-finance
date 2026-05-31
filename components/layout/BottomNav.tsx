@@ -23,6 +23,7 @@ export default function BottomNav() {
     { href: '/budgets',   label: t.more_budgets,   emoji: '📊' },
     { href: '/loans',     label: t.more_loans,     emoji: '🏦' },
     { href: '/stocks',    label: t.more_stocks,    emoji: '📈' },
+    { href: '/insights',  label: t.more_insights,  emoji: '🤖' },
     { href: '/tax',       label: t.more_tax,       emoji: '🏛️' },
     { href: '/reminders', label: t.more_reminders, emoji: '🔔' },
     { href: '/settings',  label: t.more_settings,  emoji: '⚙️' },

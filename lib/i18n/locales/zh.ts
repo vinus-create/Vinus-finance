@@ -413,4 +413,32 @@ export const zh: Translations = {
   empty_reminders_hint: '点击"+ 添加"设置账单提醒。',
   empty_tax: '暂无税务减免记录',
   empty_tax_hint: '点击"+ 添加"记录您的 LHDN 减免。',
+  // ── Business / Ledger ────────────────────────
+  ledger_label: '账本',
+  ledger_personal: '个人',
+  ledger_business: '商业',
+  txn_filter_all: '全部',
+  txn_filter_personal: '个人',
+  txn_filter_business: '商业',
+  business_title: '商业摘要',
+  business_revenue: '营业额',
+  business_expenses: '支出',
+  business_profit: '净利润',
+  business_margin: '利润率',
+  business_tab: '🏪 商业',
+  // ── Insights / AI Digest ─────────────────────
+  more_insights: 'AI 分析',
+  insights_title: 'AI 消费分析',
+  digest_generate_btn: '🤖 分析我的消费',
+  digest_generating: '正在分析您的财务...',
+  digest_last_week: '过去7天',
+  digest_empty: '暂无分析报告',
+  digest_empty_hint: '点击上方按钮获取您的 AI 消费分析。',
+  digest_share_btn: '分享 😂',
+  // ── Investment Sync ───────────────────────────
+  qa_investment: '投资',
+  parser_investment_hint: '上传 Moomoo、AHAM 或 EPF i-Account PDF 对账单',
+  parser_investment_select: '选择投资对账单',
+  // ── WhatsApp ──────────────────────────────────
+  whatsapp_setup_title: 'WhatsApp 机器人',
 }

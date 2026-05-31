@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { cn } from '@/lib/utils'
 import { useLang } from '@/lib/i18n/LanguageProvider'
-import type { ExpenseCategory, IncomeCategory, TransactionType } from '@/lib/types/app.types'
+import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
 import type { Account } from '@/lib/types/app.types'
 
 interface Txn {
@@ -22,6 +22,7 @@ interface Txn {
   income_category: string | null
   transaction_date: string
   account_name: string
+  ledger?: LedgerType
 }
 
 interface Props {
@@ -45,6 +46,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
   const [accountName, setAccountName] = useState(txn.account_name)
   const [expenseCat, setExpenseCat] = useState<ExpenseCategory | null>(txn.expense_category as ExpenseCategory | null)
   const [incomeCat, setIncomeCat] = useState<IncomeCategory | null>(txn.income_category as IncomeCategory | null)
+  const [ledger, setLedger] = useState<LedgerType>(txn.ledger ?? 'personal')
   const [accounts, setAccounts] = useState<Account[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +59,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
     setDescription(txn.merchant_name || txn.description || '')
     setDate(txn.transaction_date)
     setAccountName(txn.account_name)
+    setLedger(txn.ledger ?? 'personal')
     setExpenseCat(txn.expense_category as ExpenseCategory | null)
     setIncomeCat(txn.income_category as IncomeCategory | null)
     setError(null)
@@ -103,6 +106,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           income_category: type === 'income' ? incomeCat : null,
           transaction_date: date,
           account_name: accountName,
+          ledger,
         })
         .eq('id', txn.id)
         .eq('user_id', user.id)
@@ -163,6 +167,26 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
                 {tp === 'expense' ? t.preview_type_expense : tp === 'income' ? t.preview_type_income : t.preview_type_transfer}
               </button>
             ))}
+          </div>
+
+          {/* Personal / Business ledger toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground font-medium">{t.ledger_label}:</span>
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+              {(['personal', 'business'] as LedgerType[]).map(l => (
+                <button
+                  key={l}
+                  onClick={() => setLedger(l)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    ledger === l
+                      ? 'bg-emerald-500 text-white font-semibold'
+                      : 'bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {l === 'personal' ? `👤 ${t.ledger_personal}` : `🏪 ${t.ledger_business}`}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Description + Amount */}

@@ -421,4 +421,32 @@ export interface Translations {
   empty_reminders_hint: string
   empty_tax: string
   empty_tax_hint: string
+  // ── Business / Ledger ────────────────────────
+  ledger_label: string
+  ledger_personal: string
+  ledger_business: string
+  txn_filter_all: string
+  txn_filter_personal: string
+  txn_filter_business: string
+  business_title: string
+  business_revenue: string
+  business_expenses: string
+  business_profit: string
+  business_margin: string
+  business_tab: string
+  // ── Insights / AI Digest ─────────────────────
+  more_insights: string
+  insights_title: string
+  digest_generate_btn: string
+  digest_generating: string
+  digest_last_week: string
+  digest_empty: string
+  digest_empty_hint: string
+  digest_share_btn: string
+  // ── Investment Sync ───────────────────────────
+  qa_investment: string
+  parser_investment_hint: string
+  parser_investment_select: string
+  // ── WhatsApp ──────────────────────────────────
+  whatsapp_setup_title: string
 }

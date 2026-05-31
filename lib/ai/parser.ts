@@ -1,6 +1,6 @@
 import { getFlashModel } from './gemini'
-import { buildTextPrompt, buildImagePrompt, buildBankStatementPrompt, buildVoiceAudioPrompt } from './prompts'
-import type { ExpenseCategory, IncomeCategory, TransactionType } from '@/lib/types/app.types'
+import { buildTextPrompt, buildImagePrompt, buildBankStatementPrompt, buildVoiceAudioPrompt, buildInvestmentStatementPrompt } from './prompts'
+import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
 
 // ─── Output Schema ─────────────────────────────────────────────
 
@@ -14,8 +14,39 @@ export interface ParsedTransaction {
   merchant_name: string | null
   transaction_date: string
   account_name: string
+  ledger: LedgerType
   is_tax_deductible: boolean
   confidence: number
+}
+
+// ─── Investment Statement Types ──────────────────────────────
+export interface ParsedStockTrade {
+  ticker: string
+  company_name: string | null
+  trade_type: 'buy' | 'sell'
+  shares: number
+  price_per_share: number
+  total_amount: number
+  fees: number
+  trade_date: string
+  currency: string
+  notes: string | null
+}
+
+export interface InvestmentStatementInfo {
+  broker_name: string
+  account_holder: string
+  account_number: string
+  statement_date: string
+  currency: string
+  total_value: number | null
+}
+
+export interface InvestmentParseResult {
+  success: boolean
+  trades: ParsedStockTrade[]
+  statementInfo: InvestmentStatementInfo | null
+  error?: string
 }
 
 export interface StatementAccountInfo {
@@ -71,6 +102,11 @@ const VALID_INCOME_CATEGORIES = new Set([
   'dividend','interest','epf_withdrawal','government_aid','other_income',
 ])
 
+// Income categories that signal a business transaction
+const BUSINESS_INCOME_CATEGORIES = new Set([
+  'business_income', 'rental_income', 'freelance',
+])
+
 function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
   const type = (['income','expense','transfer'].includes(raw.type as string)
     ? raw.type : 'expense') as TransactionType
@@ -91,6 +127,12 @@ function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
     ? raw.transaction_date
     : todayMY()
 
+  // Auto-detect business ledger: business_income / rental / freelance → business
+  const rawLedger = raw.ledger as string | undefined
+  const autoLedger: LedgerType = (rawLedger === 'business')
+    || (type === 'income' && income_category !== null && BUSINESS_INCOME_CATEGORIES.has(income_category))
+    ? 'business' : 'personal'
+
   return {
     type,
     amount,
@@ -101,6 +143,7 @@ function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
     merchant_name: typeof raw.merchant_name === 'string' ? raw.merchant_name : null,
     transaction_date: dateStr,
     account_name: typeof raw.account_name === 'string' ? raw.account_name : 'Cash',
+    ledger: autoLedger,
     is_tax_deductible: raw.is_tax_deductible === true,
     confidence: typeof raw.confidence === 'number' ? raw.confidence : 0.7,
   }
@@ -219,5 +262,54 @@ export async function parsePDFTransaction(base64Data: string): Promise<ParseResu
   } catch (err) {
     console.error('[parsePDFTransaction]', err)
     return { success: false, transactions: [], source: 'pdf', error: String(err) }
+  }
+}
+
+// ─── Investment Statement Parser ─────────────────────────────
+
+function parseInvestmentJSON(text: string): { trades: ParsedStockTrade[]; statementInfo: InvestmentStatementInfo | null } {
+  const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
+  const parsed = JSON.parse(cleaned)
+
+  const ai = parsed.statement_info as Record<string, unknown> | undefined
+  const statementInfo: InvestmentStatementInfo | null = ai ? {
+    broker_name:     typeof ai.broker_name === 'string'     ? ai.broker_name     : '',
+    account_holder:  typeof ai.account_holder === 'string'  ? ai.account_holder  : '',
+    account_number:  typeof ai.account_number === 'string'  ? ai.account_number  : '',
+    statement_date:  typeof ai.statement_date === 'string'  ? ai.statement_date  : '',
+    currency:        typeof ai.currency === 'string'         ? ai.currency         : 'USD',
+    total_value:     typeof ai.total_value === 'number'      ? ai.total_value      : null,
+  } : null
+
+  const rawTrades = Array.isArray(parsed.trades) ? parsed.trades : []
+  const trades: ParsedStockTrade[] = rawTrades.map((r: Record<string, unknown>) => ({
+    ticker:          typeof r.ticker === 'string' ? r.ticker.toUpperCase().trim() : 'UNKNOWN',
+    company_name:    typeof r.company_name === 'string' ? r.company_name : null,
+    trade_type:      r.trade_type === 'sell' ? 'sell' : 'buy',
+    shares:          typeof r.shares === 'number' && r.shares > 0 ? r.shares : 0,
+    price_per_share: typeof r.price_per_share === 'number' ? r.price_per_share : 0,
+    total_amount:    typeof r.total_amount === 'number' ? r.total_amount : 0,
+    fees:            typeof r.fees === 'number' ? r.fees : 0,
+    trade_date:      typeof r.trade_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.trade_date) ? r.trade_date : todayMY(),
+    currency:        typeof r.currency === 'string' ? r.currency : 'USD',
+    notes:           typeof r.notes === 'string' ? r.notes : null,
+  })).filter(t => t.shares > 0)
+
+  return { trades, statementInfo }
+}
+
+export async function parseInvestmentStatement(base64Data: string): Promise<InvestmentParseResult> {
+  try {
+    const model = getFlashModel()
+    const result = await withRetry(() => model.generateContent([
+      { text: buildInvestmentStatementPrompt() },
+      { inlineData: { mimeType: 'application/pdf', data: base64Data } },
+    ]))
+    const text = result.response.text()
+    const { trades, statementInfo } = parseInvestmentJSON(text)
+    return { success: true, trades, statementInfo }
+  } catch (err) {
+    console.error('[parseInvestmentStatement]', err)
+    return { success: false, trades: [], statementInfo: null, error: String(err) }
   }
 }

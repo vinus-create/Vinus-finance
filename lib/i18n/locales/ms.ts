@@ -413,4 +413,32 @@ export const ms: Translations = {
   empty_reminders_hint: 'Tekan "+ Tambah" untuk set peringatan bil.',
   empty_tax: 'Tiada pelepasan cukai ditambah',
   empty_tax_hint: 'Tekan "+ Tambah" untuk rekod pelepasan LHDN anda.',
+  // ── Business / Ledger ────────────────────────
+  ledger_label: 'Lejar',
+  ledger_personal: 'Peribadi',
+  ledger_business: 'Perniagaan',
+  txn_filter_all: 'Semua',
+  txn_filter_personal: 'Peribadi',
+  txn_filter_business: 'Perniagaan',
+  business_title: 'Ringkasan Perniagaan',
+  business_revenue: 'Hasil',
+  business_expenses: 'Perbelanjaan',
+  business_profit: 'Keuntungan Bersih',
+  business_margin: 'Margin',
+  business_tab: '🏪 Perniagaan',
+  // ── Insights / AI Digest ─────────────────────
+  more_insights: 'AI Insights',
+  insights_title: 'AI Insights',
+  digest_generate_btn: '🤖 Analisis Perbelanjaan Saya',
+  digest_generating: 'Menganalisis kewangan anda...',
+  digest_last_week: '7 Hari Lepas',
+  digest_empty: 'Tiada laporan lagi',
+  digest_empty_hint: 'Tekan butang di atas untuk laporan perbelanjaan AI anda.',
+  digest_share_btn: 'Kongsi 😂',
+  // ── Investment Sync ───────────────────────────
+  qa_investment: 'Pelaburan',
+  parser_investment_hint: 'Muat naik penyata Moomoo, AHAM, atau EPF i-Account',
+  parser_investment_select: 'Pilih Penyata Pelaburan',
+  // ── WhatsApp ──────────────────────────────────
+  whatsapp_setup_title: 'Bot WhatsApp',
 }

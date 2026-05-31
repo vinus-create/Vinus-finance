@@ -209,3 +209,96 @@ Additional rules for bank statements:
 
 Return ONLY the JSON object, no markdown, no explanation.`
 }
+
+// ─── Investment Statement Parser Prompt ──────────────────────
+export function buildInvestmentStatementPrompt(): string {
+  return `You are parsing a brokerage or fund statement. Extract the account details and ALL trades/transactions.
+
+Return EXACTLY this JSON structure:
+{
+  "statement_info": {
+    "broker_name": string,        // e.g. "Moomoo", "AHAM Capital", "EPF", "Rakuten Trade", "Kenanga"
+    "account_holder": string,
+    "account_number": string,
+    "statement_date": "YYYY-MM-DD",
+    "currency": "USD" | "MYR" | "SGD",
+    "total_value": number | null  // total portfolio/fund value at statement date
+  },
+  "trades": [
+    {
+      "ticker": string,           // stock ticker / fund code e.g. "NVDA", "AHAM-GROWTH", "EPF-A1"
+      "company_name": string | null,
+      "trade_type": "buy" | "sell",
+      "shares": number,           // number of units/shares
+      "price_per_share": number,  // price per unit/share
+      "total_amount": number,     // total transaction value (shares × price)
+      "fees": number,             // brokerage fees / charges (0 if not shown)
+      "trade_date": "YYYY-MM-DD",
+      "currency": string,
+      "notes": string | null      // any reference number or notes
+    }
+  ]
+}
+
+SUPPORTED STATEMENT TYPES:
+- Moomoo Malaysia: shows stock trades on US/HK/MY markets
+- AHAM Capital / Affin Hwang: unit trust transactions (subscription/redemption = buy/sell)
+- EPF i-Account: "Pengeluaran" = sell, "Caruman" = buy, Akaun 1/2/3 as ticker suffix
+- Rakuten Trade / Kenanga: MY and US stocks
+- InteractiveBrokers: stocks/ETF trades
+- Any standard brokerage activity statement
+
+RULES:
+- DATE FORMAT: Use YYYY-MM-DD always. Malaysian statements use DD/MM/YYYY — convert them.
+- For unit trusts: "Subscription" / "Pembelian" → buy; "Redemption" / "Penebusan" → sell
+- For EPF: use ticker like "EPF-A1", "EPF-A2", "EPF-A3" for the three accounts
+- For dividends: create a "buy" entry with trade_type = "buy", ticker = ticker + "-DIV"
+- If fees not specified, use 0
+- Extract ALL trades, not just a sample
+
+Return ONLY the JSON object, no markdown, no explanation.`
+}
+
+// ─── Weekly Spending Digest / Roast Prompt ───────────────────
+export function buildWeeklyDigestPrompt(
+  transactions: Array<{
+    type: string
+    amount: number
+    expense_category: string | null
+    income_category: string | null
+    merchant_name: string | null
+    description: string | null
+    transaction_date: string
+    ledger: string
+  }>,
+  totalIncome: number,
+  totalExpense: number,
+  topCategory: string | null,
+  topCategoryAmount: number,
+): string {
+  const txnSummary = transactions.map(t =>
+    `${t.transaction_date} | ${t.type === 'income' ? '+' : '-'}RM${t.amount.toFixed(2)} | ${t.merchant_name || t.description || t.expense_category || t.income_category} | ${t.ledger}`
+  ).join('\n')
+
+  return `You are a brutally honest but funny Malaysian financial advisor. Your job is to roast (and occasionally praise) this person's spending in the past 7 days.
+
+RULES:
+- Use a mix of English and light Manglish (lah, wei, bro, aiyo) — don't overdo it
+- Be specific — mention actual RM amounts and merchant names from the data
+- Give 1 genuine praise and 1 actionable improvement tip
+- Keep it under 200 words
+- Be warm, funny, not mean-spirited
+- Reference Malaysian context (mamak, Grab, Shopee, etc.) naturally
+- End with a short motivational one-liner
+
+SPENDING DATA (last 7 days):
+Total Income: RM${totalIncome.toFixed(2)}
+Total Expenses: RM${totalExpense.toFixed(2)}
+Net: RM${(totalIncome - totalExpense).toFixed(2)}
+Top spending category: ${topCategory || 'miscellaneous'} (RM${topCategoryAmount.toFixed(2)})
+
+Transactions:
+${txnSummary || 'No transactions recorded this week.'}
+
+Write the spending roast now. Return plain text only (no JSON, no markdown headers).`
+}

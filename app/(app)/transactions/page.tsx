@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import PageHeader from '@/components/layout/PageHeader'
 import MonthNav from '@/components/transactions/MonthNav'
 import TransactionsController from '@/components/transactions/TransactionsController'
@@ -10,7 +11,7 @@ import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
 
 interface Props {
-  searchParams: Promise<{ month?: string; new?: string }>
+  searchParams: Promise<{ month?: string; new?: string; ledger?: string }>
 }
 
 export default async function TransactionsPage({ searchParams }: Props) {
@@ -31,19 +32,27 @@ export default async function TransactionsPage({ searchParams }: Props) {
     month = m
   }
 
+  // Ledger filter
+  const ledgerFilter = params.ledger === 'personal' ? 'personal'
+    : params.ledger === 'business' ? 'business'
+    : null // null = all
+
   // Build date strings directly — avoid toISOString() which shifts by UTC offset
   const mm = String(month).padStart(2, '0')
   const lastDay = new Date(year, month, 0).getDate()
   const startOfMonth = `${year}-${mm}-01`
   const endOfMonth = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
 
-  const { data: txns } = await supabase
+  const monthParam = `${year}-${mm}`
+  let query = supabase
     .from('transactions')
-    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name')
+    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name, ledger')
     .eq('user_id', user.id)
     .gte('transaction_date', startOfMonth)
     .lte('transaction_date', endOfMonth)
     .order('transaction_date', { ascending: false })
+  if (ledgerFilter) query = query.eq('ledger', ledgerFilter)
+  const { data: txns } = await query
 
   // Month summary (transfers counted as outgoing / expense)
   const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
@@ -75,6 +84,32 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
       {/* Month navigation */}
       <MonthNav year={year} month={month} />
+
+      {/* Ledger filter pills */}
+      <div className="flex gap-2 px-4 pt-3 pb-1">
+        {[
+          { key: null,         label: t.txn_filter_all },
+          { key: 'personal',   label: `👤 ${t.txn_filter_personal}` },
+          { key: 'business',   label: `🏪 ${t.txn_filter_business}` },
+        ].map(({ key, label }) => {
+          const href = key
+            ? `/transactions?month=${monthParam}&ledger=${key}`
+            : `/transactions?month=${monthParam}`
+          return (
+            <Link
+              key={key ?? 'all'}
+              href={href}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                ledgerFilter === key
+                  ? 'bg-emerald-500 border-emerald-500 text-white font-semibold'
+                  : 'border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {label}
+            </Link>
+          )
+        })}
+      </div>
 
       {/* Month summary strip */}
       {(txns?.length ?? 0) > 0 && (

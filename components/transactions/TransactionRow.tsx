@@ -7,7 +7,7 @@ import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import { cn } from '@/lib/utils'
 import DeleteTransactionButton from './DeleteTransactionButton'
 import EditTransactionSheet from './EditTransactionSheet'
-import type { ExpenseCategory, IncomeCategory, TransactionType } from '@/lib/types/app.types'
+import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
 import type { LangCode } from '@/lib/i18n'
 
 interface Txn {
@@ -21,6 +21,7 @@ interface Txn {
   income_category: string | null
   transaction_date: string
   account_name: string
+  ledger?: LedgerType
 }
 
 interface Props {
@@ -51,7 +52,14 @@ export default function TransactionRow({ txn, lang }: Props) {
       >
         <span className="text-xl shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium truncate">{name}</p>
+            {localTxn.ledger === 'business' && (
+              <span className="shrink-0 text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-semibold">
+                🏪
+              </span>
+            )}
+          </div>
           {label && name !== label && (
             <p className="text-xs text-muted-foreground truncate">{label}</p>
           )}

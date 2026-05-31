@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { cn } from '@/lib/utils'
 import type { ParsedTransaction } from '@/lib/ai/parser'
-import type { Account } from '@/lib/types/app.types'
+import type { Account, LedgerType } from '@/lib/types/app.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import type { LangCode } from '@/lib/i18n'
@@ -48,6 +48,10 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
+  // Global ledger: auto-default to business if any transaction has business_income
+  const [globalLedger, setGlobalLedger] = useState<LedgerType>(() =>
+    transactions.some(tx => tx.ledger === 'business') ? 'business' : 'personal'
+  )
   const { t, lang } = useLang()
 
   // ── Load user accounts ────────────────────────────────────
@@ -149,6 +153,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         merchant_name: txn.merchant_name || null,
         transaction_date: sanitizeDate(txn.transaction_date),
         account_name: detectedAccount?.name || txn.account_name,
+        ledger: globalLedger,
         is_tax_deductible: txn.is_tax_deductible,
       }))
 
@@ -207,6 +212,26 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
           </div>
         </div>
       )}
+
+      {/* Personal / Business ledger toggle */}
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-muted-foreground font-medium">{t.ledger_label}:</span>
+        <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+          {(['personal', 'business'] as LedgerType[]).map(l => (
+            <button
+              key={l}
+              onClick={() => setGlobalLedger(l)}
+              className={`px-3 py-1.5 transition-colors ${
+                globalLedger === l
+                  ? 'bg-emerald-500 text-white font-semibold'
+                  : 'bg-background text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {l === 'personal' ? `👤 ${t.ledger_personal}` : `🏪 ${t.ledger_business}`}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <p className="text-xs text-muted-foreground">
         {valid.length} {t.preview_detected}
