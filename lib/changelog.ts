@@ -5,9 +5,27 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.003'
+export const APP_VERSION = '1.004'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.004',
+    date: '2026-05-31',
+    title: '商业模式 + AI 分析 + 投资同步 + WhatsApp',
+    changes: [
+      '🏪 个人/商业账本切换：每笔交易可标记 Personal 或 Business，仪表盘显示业务营业额、支出、净利润及利润率',
+      '🤖 AI 消费分析（Roast My Spending）：Gemini 分析过去 7 天消费，用幽默 Manglish 风格生成个人化报告，可分享',
+      '📈 投资对账单同步：上传 Moomoo/AHAM/EPF/Rakuten PDF，自动解析交易并更新持股（加权平均成本）',
+      '💬 WhatsApp 机器人：发送文字或收据照片给 WhatsApp 号码，自动记账并回复确认',
+      '🔧 修复预算页面 UTC+8 时区偏移导致月份范围错误',
+      '🔧 修复提醒页面今日/逾期判断 UTC+8 偏移问题',
+      '🔧 修复 AI 解析器回退日期和 AI 提示词使用马来西亚时区',
+      '⚡ 编辑交易后使用 router.refresh() 替换 window.location.reload()，消除页面闪烁',
+      '🔁 Gemini AI 调用加入自动重试（指数退避，最多 2 次），减少偶发超时失败',
+      '🗂️ 快速添加增加第 5 个标签：📈 投资（上传经纪商/基金 PDF）',
+      '📋 交易列表新增 Personal/Business 筛选标签',
+    ],
+  },
   {
     version: '1.003',
     date: '2026-05-30',

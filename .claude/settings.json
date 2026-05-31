@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -Command \"$input = [Console]::In.ReadToEnd() | ConvertFrom-Json; $cmd = $input.tool_input.command; if ($cmd -match 'git commit') { Write-Host '⚠️  CHANGELOG CHECK: Have you updated lib/changelog.ts (APP_VERSION + new entry) and package.json version?' -ForegroundColor Yellow }\""
+          }
+        ]
+      }
+    ]
+  }
+}
