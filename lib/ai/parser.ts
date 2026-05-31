@@ -293,7 +293,7 @@ function parseInvestmentJSON(text: string): { trades: ParsedStockTrade[]; statem
     trade_date:      typeof r.trade_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.trade_date) ? r.trade_date : todayMY(),
     currency:        typeof r.currency === 'string' ? r.currency : 'USD',
     notes:           typeof r.notes === 'string' ? r.notes : null,
-  })).filter(t => t.shares > 0)
+  })).filter((t: ParsedStockTrade) => t.shares > 0)
 
   return { trades, statementInfo }
 }

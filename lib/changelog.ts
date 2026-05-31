@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.005'
+export const APP_VERSION = '1.006'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.006',
+    date: '2026-05-31',
+    title: '修复构建错误（TypeScript）',
+    changes: [
+      '🔧 修复 TypeScript 类型推断错误导致 Vercel 构建失败（投资解析器 filter 参数缺少类型标注）',
+    ],
+  },
   {
     version: '1.005',
     date: '2026-05-31',
