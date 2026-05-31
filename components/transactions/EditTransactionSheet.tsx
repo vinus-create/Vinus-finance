@@ -150,7 +150,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
     <Drawer open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DrawerContent className="max-h-[90dvh]">
         <DrawerHeader className="pb-2">
-          <DrawerTitle className="text-base">编辑交易</DrawerTitle>
+          <DrawerTitle className="text-base">{t.edit_txn_title}</DrawerTitle>
         </DrawerHeader>
 
         <div className="px-4 pb-6 space-y-3 overflow-y-auto">
@@ -193,7 +193,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           <div className="grid grid-cols-5 gap-2">
             <Input
               className="col-span-3 h-10 text-sm bg-background"
-              placeholder="名称"
+              placeholder={t.edit_txn_name_placeholder}
               value={description}
               onChange={e => setDescription(e.target.value)}
             />
@@ -217,13 +217,13 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           {/* Category picker */}
           {type !== 'transfer' && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">类别</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t.edit_txn_category_label}</p>
               <button
                 onClick={() => setShowCatPicker(!showCatPicker)}
                 className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm hover:bg-muted transition-colors"
               >
                 <span className="text-lg">{currentCatMeta?.icon ?? '📌'}</span>
-                <span className="flex-1 text-left">{currentCatMeta?.label ?? '选择类别'}</span>
+                <span className="flex-1 text-left">{currentCatMeta?.label ?? t.edit_txn_category_placeholder}</span>
                 <span className="text-muted-foreground text-xs">{showCatPicker ? '▲' : '▼'}</span>
               </button>
               {showCatPicker && (
@@ -276,13 +276,13 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <Button variant="outline" onClick={onClose} disabled={saving}>取消</Button>
+            <Button variant="outline" onClick={onClose} disabled={saving}>{t.cancel}</Button>
             <Button
               className="bg-emerald-500 text-white hover:bg-emerald-600"
               onClick={handleSave}
               disabled={saving || amount <= 0}
             >
-              {saving ? '保存中...' : '💾 保存'}
+              {saving ? t.edit_txn_saving : `💾 ${t.save}`}
             </Button>
           </div>
         </div>

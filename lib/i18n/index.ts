@@ -449,4 +449,26 @@ export interface Translations {
   parser_investment_select: string
   // ── WhatsApp ──────────────────────────────────
   whatsapp_setup_title: string
+  // ── Transaction search ────────────────────────
+  txn_search_placeholder: string
+  txn_no_results: string
+  txn_search_clear: string
+  // ── CSV Export ────────────────────────────────
+  export_csv_btn: string
+  export_csv_all: string
+  export_csv_month: string
+  export_downloading: string
+  // ── Profile editing ───────────────────────────
+  settings_edit_profile: string
+  settings_phone_number: string
+  settings_phone_placeholder: string
+  settings_whatsapp_hint: string
+  settings_save_profile: string
+  settings_profile_saved: string
+  // ── Edit Transaction ──────────────────────────
+  edit_txn_title: string
+  edit_txn_saving: string
+  edit_txn_name_placeholder: string
+  edit_txn_category_label: string
+  edit_txn_category_placeholder: string
 }

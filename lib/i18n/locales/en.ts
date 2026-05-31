@@ -441,4 +441,26 @@ export const en: Translations = {
   parser_investment_select: 'Select Investment Statement',
   // ── WhatsApp ──────────────────────────────────
   whatsapp_setup_title: 'WhatsApp Bot',
+  // ── Transaction search ────────────────────────
+  txn_search_placeholder: 'Search transactions…',
+  txn_no_results: 'No transactions found',
+  txn_search_clear: 'Clear',
+  // ── CSV Export ────────────────────────────────
+  export_csv_btn: '⬇ Export CSV',
+  export_csv_all: 'All time',
+  export_csv_month: 'This month',
+  export_downloading: 'Downloading…',
+  // ── Profile editing ───────────────────────────
+  settings_edit_profile: 'Edit Profile',
+  settings_phone_number: 'Phone Number',
+  settings_phone_placeholder: 'e.g. 60123456789',
+  settings_whatsapp_hint: 'Used for WhatsApp bot — include country code, no +',
+  settings_save_profile: 'Save',
+  settings_profile_saved: '✅ Saved!',
+  // ── Edit Transaction ──────────────────────────
+  edit_txn_title: 'Edit Transaction',
+  edit_txn_saving: 'Saving…',
+  edit_txn_name_placeholder: 'Name / merchant',
+  edit_txn_category_label: 'Category',
+  edit_txn_category_placeholder: 'Select category',
 }

@@ -6,12 +6,13 @@ import PageHeader from '@/components/layout/PageHeader'
 import MonthNav from '@/components/transactions/MonthNav'
 import TransactionsController from '@/components/transactions/TransactionsController'
 import TransactionRow from '@/components/transactions/TransactionRow'
+import TransactionSearch from '@/components/transactions/TransactionSearch'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
 
 interface Props {
-  searchParams: Promise<{ month?: string; new?: string; ledger?: string }>
+  searchParams: Promise<{ month?: string; new?: string; ledger?: string; q?: string }>
 }
 
 export default async function TransactionsPage({ searchParams }: Props) {
@@ -37,6 +38,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
     : params.ledger === 'business' ? 'business'
     : null // null = all
 
+  // Search query
+  const searchQuery = params.q?.trim() ?? ''
+
   // Build date strings directly — avoid toISOString() which shifts by UTC offset
   const mm = String(month).padStart(2, '0')
   const lastDay = new Date(year, month, 0).getDate()
@@ -44,25 +48,50 @@ export default async function TransactionsPage({ searchParams }: Props) {
   const endOfMonth = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
 
   const monthParam = `${year}-${mm}`
-  let query = supabase
-    .from('transactions')
-    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name, ledger')
-    .eq('user_id', user.id)
-    .gte('transaction_date', startOfMonth)
-    .lte('transaction_date', endOfMonth)
-    .order('transaction_date', { ascending: false })
-  if (ledgerFilter) query = query.eq('ledger', ledgerFilter)
-  const { data: txns } = await query
+
+  // Try with ledger column; fall back gracefully if SQL migration not yet run
+  let txns: Array<Record<string, unknown>> | null = null
+  {
+    const q = supabase
+      .from('transactions')
+      .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name, ledger')
+      .eq('user_id', user.id)
+      .gte('transaction_date', startOfMonth)
+      .lte('transaction_date', endOfMonth)
+      .order('transaction_date', { ascending: false })
+    const { data: d1, error: e1 } = await (ledgerFilter ? q.eq('ledger', ledgerFilter) : q)
+    if (e1) {
+      const { data: d2 } = await supabase
+        .from('transactions')
+        .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name')
+        .eq('user_id', user.id)
+        .gte('transaction_date', startOfMonth)
+        .lte('transaction_date', endOfMonth)
+        .order('transaction_date', { ascending: false })
+      txns = (d2 ?? []).map(r => ({ ...r, ledger: 'personal' }))
+    } else {
+      txns = d1
+    }
+  }
+
+  // Client-side search filter (keyword match on merchant + description)
+  const filtered = searchQuery
+    ? (txns ?? []).filter(txn => {
+        const haystack = `${txn.merchant_name ?? ''} ${txn.description ?? ''}`.toLowerCase()
+        return haystack.includes(searchQuery.toLowerCase())
+      })
+    : (txns ?? [])
 
   // Month summary (transfers counted as outgoing / expense)
   const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const totalExpense = txns?.filter(t => t.type === 'expense' || t.type === 'transfer').reduce((s, t) => s + Number(t.amount), 0) ?? 0
 
-  // Group by date
-  const groups: Record<string, typeof txns> = {}
-  for (const txn of txns ?? []) {
-    if (!groups[txn.transaction_date]) groups[txn.transaction_date] = []
-    groups[txn.transaction_date]!.push(txn)
+  // Group by date (use filtered list)
+  const groups: Record<string, typeof filtered> = {}
+  for (const txn of filtered) {
+    const dateKey = txn.transaction_date as string
+    if (!groups[dateKey]) groups[dateKey] = []
+    groups[dateKey]!.push(txn)
   }
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
 
@@ -80,7 +109,18 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
   return (
     <div>
-      <PageHeader title={t.txn_title} />
+      <PageHeader
+        title={t.txn_title}
+        right={
+          <a
+            href={`/api/export?month=${monthParam}`}
+            download
+            className="text-xs text-muted-foreground bg-muted px-2.5 py-1.5 rounded-lg hover:bg-muted/70 transition-colors"
+          >
+            {t.export_csv_btn}
+          </a>
+        }
+      />
 
       {/* Month navigation */}
       <MonthNav year={year} month={month} />
@@ -111,6 +151,11 @@ export default async function TransactionsPage({ searchParams }: Props) {
         })}
       </div>
 
+      {/* Search bar */}
+      <Suspense>
+        <TransactionSearch />
+      </Suspense>
+
       {/* Month summary strip */}
       {(txns?.length ?? 0) > 0 && (
         <div className="flex gap-4 px-4 py-2.5 text-sm border-b border-border bg-muted/30">
@@ -136,9 +181,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
       <div className="pb-2">
         {sortedDates.length === 0 ? (
           <EmptyState
-            emoji="📭"
-            title={t.empty_transactions}
-            body={t.empty_transactions_hint}
+            emoji={searchQuery ? '🔍' : '📭'}
+            title={searchQuery ? t.txn_no_results : t.empty_transactions}
+            body={searchQuery ? `"${searchQuery}"` : t.empty_transactions_hint}
           />
         ) : (
           sortedDates.map(dateStr => (
@@ -158,7 +203,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
               {/* Transactions for this date */}
               <div className="px-4 space-y-1.5">
                 {groups[dateStr]!.map((txn) => (
-                  <TransactionRow key={txn.id} txn={txn} lang={lang} />
+                  <TransactionRow key={txn.id as string} txn={txn as unknown as Parameters<typeof TransactionRow>[0]['txn']} lang={lang} />
                 ))}
               </div>
             </div>

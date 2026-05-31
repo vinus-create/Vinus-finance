@@ -46,13 +46,28 @@ export default async function DashboardPage({ searchParams }: Props) {
   const startOfMonth = `${year}-${mm}-01`
   const endOfMonth = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
 
-  const { data: txns } = await supabase
-    .from('transactions')
-    .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id, ledger')
-    .eq('user_id', user.id)
-    .gte('transaction_date', startOfMonth)
-    .lte('transaction_date', endOfMonth)
-    .order('transaction_date', { ascending: false })
+  let txns: Array<Record<string, unknown>> | null = null
+  {
+    const { data: d1, error: e1 } = await supabase
+      .from('transactions')
+      .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id, ledger')
+      .eq('user_id', user.id)
+      .gte('transaction_date', startOfMonth)
+      .lte('transaction_date', endOfMonth)
+      .order('transaction_date', { ascending: false })
+    if (e1) {
+      const { data: d2 } = await supabase
+        .from('transactions')
+        .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id')
+        .eq('user_id', user.id)
+        .gte('transaction_date', startOfMonth)
+        .lte('transaction_date', endOfMonth)
+        .order('transaction_date', { ascending: false })
+      txns = (d2 ?? []).map(r => ({ ...r, ledger: 'personal' }))
+    } else {
+      txns = d1
+    }
+  }
 
   const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const totalExpense = txns?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0
@@ -69,7 +84,8 @@ export default async function DashboardPage({ searchParams }: Props) {
   const catSpend: Record<string, number> = {}
   for (const txn of txns ?? []) {
     if (txn.type === 'expense' && txn.expense_category) {
-      catSpend[txn.expense_category] = (catSpend[txn.expense_category] ?? 0) + Number(txn.amount)
+      const cat = txn.expense_category as string
+      catSpend[cat] = (catSpend[cat] ?? 0) + Number(txn.amount)
     }
   }
   const topCategories = Object.entries(catSpend)
@@ -119,28 +135,31 @@ export default async function DashboardPage({ searchParams }: Props) {
         ) : (
           <div className="space-y-2">
             {recent.map((txn) => {
-              const cat = txn.type === 'expense' && txn.expense_category
-                ? EXPENSE_CATEGORY_MAP[txn.expense_category as ExpenseCategory]
-                : txn.income_category
-                ? INCOME_CATEGORY_MAP[txn.income_category as IncomeCategory]
+              const txnType = txn.type as string
+              const expCat = txn.expense_category as ExpenseCategory | null
+              const incCat = txn.income_category as IncomeCategory | null
+              const cat = txnType === 'expense' && expCat
+                ? EXPENSE_CATEGORY_MAP[expCat]
+                : incCat
+                ? INCOME_CATEGORY_MAP[incCat]
                 : undefined
-              const icon = cat?.icon ?? (txn.type === 'income' ? '💰' : '💸')
-              const catValue = txn.type === 'expense' ? txn.expense_category : txn.income_category
-              const catLabel = catValue ? getCategoryLabel(catValue, txn.type, lang) : ''
-              const name = txn.merchant_name ?? txn.description ?? catLabel ?? t.txn_unnamed
+              const icon = cat?.icon ?? (txnType === 'income' ? '💰' : '💸')
+              const catValue = txnType === 'expense' ? expCat : incCat
+              const catLabel = catValue ? getCategoryLabel(catValue, txnType, lang) : ''
+              const name = (txn.merchant_name as string | null) ?? (txn.description as string | null) ?? catLabel ?? t.txn_unnamed
 
               return (
                 <div
-                  key={txn.id}
+                  key={txn.id as string}
                   className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
                 >
                   <span className="text-xl shrink-0">{icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{name}</p>
-                    <p className="text-xs text-muted-foreground">{txn.transaction_date}</p>
+                    <p className="text-xs text-muted-foreground">{txn.transaction_date as string}</p>
                   </div>
-                  <p className={`text-sm font-semibold ml-3 shrink-0 ${txn.type === 'income' ? 'text-emerald-600' : ''}`}>
-                    {txn.type === 'income' ? '+' : '−'}RM {Number(txn.amount).toFixed(2)}
+                  <p className={`text-sm font-semibold ml-3 shrink-0 ${txnType === 'income' ? 'text-emerald-600' : ''}`}>
+                    {txnType === 'income' ? '+' : '−'}RM {Number(txn.amount).toFixed(2)}
                   </p>
                 </div>
               )

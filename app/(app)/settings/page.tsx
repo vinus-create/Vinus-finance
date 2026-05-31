@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import SignOutButton from './SignOutButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import NotificationSettings from './NotificationSettings'
+import EditProfileCard from './EditProfileCard'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { APP_VERSION } from '@/lib/changelog'
 
@@ -19,7 +20,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email_reminders, tax_form_type')
+    .select('full_name, email_reminders, tax_form_type, phone_number')
     .eq('id', user.id)
     .single()
 
@@ -27,24 +28,11 @@ export default async function SettingsPage() {
     <div>
       <PageHeader title={t.settings_title} showBack />
       <div className="px-4 mt-4 space-y-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-4 pb-4 space-y-3">
-            <div>
-              <p className="text-xs text-muted-foreground">{t.settings_name}</p>
-              <p className="font-medium">{profile?.full_name ?? '—'}</p>
-            </div>
-            <Separator />
-            <div>
-              <p className="text-xs text-muted-foreground">{t.settings_email}</p>
-              <p className="font-medium">{user.email}</p>
-            </div>
-            <Separator />
-            <div>
-              <p className="text-xs text-muted-foreground">{t.settings_tax_form}</p>
-              <p className="font-medium">{profile?.tax_form_type ?? 'BE'}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EditProfileCard
+          initialName={profile?.full_name ?? null}
+          initialPhone={(profile as { phone_number?: string | null })?.phone_number ?? null}
+          email={user.email ?? ''}
+        />
 
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-4 pb-4 space-y-2">

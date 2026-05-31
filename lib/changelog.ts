@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.006'
+export const APP_VERSION = '1.007'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.007',
+    date: '2026-05-31',
+    title: '搜索 + CSV导出 + 资料编辑 + 修复',
+    changes: [
+      '🔍 交易搜索：在交易页面按商家名/描述搜索',
+      '⬇ CSV 导出：交易页面右上角可按月导出 CSV 文件',
+      '👤 资料编辑：设置页面可修改姓名和 WhatsApp 手机号码',
+      '🔧 编辑交易表单：修复所有硬编码中文字符串，改为多语言支持',
+      '🛡️ 稳健查询：即使 ledger 数据库列尚未添加，交易记录也能正常显示',
+    ],
+  },
   {
     version: '1.006',
     date: '2026-05-31',
