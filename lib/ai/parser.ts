@@ -35,6 +35,26 @@ export interface ParseResult {
   error?: string
 }
 
+// ─── Helpers ──────────────────────────────────────────────────
+
+/** Returns today's date in YYYY-MM-DD using MY timezone (UTC+8) */
+function todayMY(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })
+}
+
+/** Calls fn() with exponential backoff — 2 retries, delays 1s / 2s */
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (i === retries) throw err
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)))
+    }
+  }
+  throw new Error('unreachable')
+}
+
 // ─── Validation & Sanitisation ────────────────────────────────
 
 const VALID_EXPENSE_CATEGORIES = new Set([
@@ -67,10 +87,9 @@ function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
     ? raw.income_category as IncomeCategory
     : type === 'income' ? 'other_income' : null
 
-  const today = new Date().toISOString().slice(0, 10)
   const dateStr = typeof raw.transaction_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.transaction_date)
     ? raw.transaction_date
-    : today
+    : todayMY()
 
   return {
     type,
@@ -138,7 +157,7 @@ function parseBankStatementJSON(text: string): {
 export async function parseTextTransaction(input: string): Promise<ParseResult> {
   try {
     const model = getFlashModel()
-    const result = await model.generateContent(buildTextPrompt(input))
+    const result = await withRetry(() => model.generateContent(buildTextPrompt(input)))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
     return { success: true, transactions, source: 'text' }
@@ -154,10 +173,10 @@ export async function parseImageTransaction(
 ): Promise<ParseResult> {
   try {
     const model = getFlashModel()
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
       { text: buildImagePrompt() },
       { inlineData: { mimeType, data: base64Data } },
-    ])
+    ]))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
     return { success: true, transactions, source: 'image' }
@@ -174,10 +193,10 @@ export async function parseVoiceAudioTransaction(
 ): Promise<ParseResult> {
   try {
     const model = getFlashModel()
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
       { text: buildVoiceAudioPrompt() },
       { inlineData: { mimeType, data: base64Data } },
-    ])
+    ]))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
     return { success: true, transactions, source: 'voice' }
@@ -190,10 +209,10 @@ export async function parseVoiceAudioTransaction(
 export async function parsePDFTransaction(base64Data: string): Promise<ParseResult> {
   try {
     const model = getFlashModel()
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
       { text: buildBankStatementPrompt() },
       { inlineData: { mimeType: 'application/pdf', data: base64Data } },
-    ])
+    ]))
     const text = result.response.text()
     const { transactions, accountInfo } = parseBankStatementJSON(text)
     return { success: true, transactions, source: 'pdf', accountInfo }

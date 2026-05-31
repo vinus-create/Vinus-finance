@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import { cn } from '@/lib/utils'
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export default function TransactionRow({ txn, lang }: Props) {
+  const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [localTxn, setLocalTxn] = useState(txn)
 
@@ -70,10 +72,8 @@ export default function TransactionRow({ txn, lang }: Props) {
         open={editing}
         onClose={() => setEditing(false)}
         onSaved={() => {
-          // Page will reload via router.refresh() — for now just close
           setEditing(false)
-          // Trigger a full page refresh to show updated data
-          window.location.reload()
+          router.refresh()
         }}
       />
     </>

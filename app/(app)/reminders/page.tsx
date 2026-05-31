@@ -23,8 +23,8 @@ export default async function RemindersPage() {
 
   const list = (reminders ?? []) as Reminder[]
 
-  // Split overdue vs upcoming
-  const today = new Date().toISOString().slice(0, 10)
+  // Split overdue vs upcoming — use MY timezone (UTC+8) to avoid midnight shift
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })
   const overdue = list.filter(r => r.due_date < today)
   const upcoming = list.filter(r => r.due_date >= today)
 

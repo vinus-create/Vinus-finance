@@ -103,7 +103,7 @@ TAX DEDUCTIBILITY (LHDN Malaysia):
 - books, magazines → is_tax_deductible: true (lifestyle)
 - Most food, transport, entertainment → is_tax_deductible: false
 
-TODAY'S DATE: ${new Date().toISOString().slice(0, 10)}
+TODAY'S DATE: ${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })} (Malaysia time)
 `
 
 // For parsing recorded audio (Malaysian rojak — handles code-switching)
