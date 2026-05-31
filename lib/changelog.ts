@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.004'
+export const APP_VERSION = '1.005'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.005',
+    date: '2026-05-31',
+    title: '修复净资产计算（不含贷款）',
+    changes: [
+      '🔧 净资产（户口页面）不再计入贷款与债务金额——贷款已在"贷款与债务"页面单独追踪',
+      '💡 总负债仅反映余额为负数的户口（如信用卡透支），不含房贷、车贷等',
+    ],
+  },
   {
     version: '1.004',
     date: '2026-05-31',

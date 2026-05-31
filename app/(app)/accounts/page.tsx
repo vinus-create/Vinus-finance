@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import AccountsClient from '@/components/accounts/AccountsClient'
 import { getServerTranslations } from '@/lib/i18n/server'
-import type { Account, Loan } from '@/lib/types/app.types'
+import type { Account } from '@/lib/types/app.types'
 
 // ─── Run in Supabase SQL editor to activate Accounts module ──
 //
@@ -36,21 +36,16 @@ export default async function AccountsPage() {
 
   const { t } = await getServerTranslations()
 
-  const [accountsRes, loansRes] = await Promise.all([
+  const [accountsRes] = await Promise.all([
     supabase
       .from('accounts')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('created_at', { ascending: true }),
-    supabase
-      .from('loans')
-      .select('outstanding_balance, name')
-      .eq('user_id', user.id)
-      .eq('is_active', true),
   ])
 
-  let accounts = accountsRes.error ? [] : (accountsRes.data ?? []) as Account[]
+  let accounts = (accountsRes.error ? [] : (accountsRes.data ?? [])) as Account[]
 
   // Ensure at least a "Cash" account always exists
   if (accounts.length === 0) {
@@ -69,17 +64,13 @@ export default async function AccountsPage() {
       .single()
     if (created) accounts = [created as Account]
   }
-  const loans = loansRes.error ? [] : (loansRes.data ?? []) as Pick<Loan, 'outstanding_balance' | 'name'>[]
-
-  // Compute net worth server-side for SSR
+  // Net worth = accounts only. Loans are tracked separately on the Loans page.
   const assets = accounts
     .filter(a => a.include_in_net_worth && a.balance >= 0)
     .reduce((s, a) => s + a.balance, 0)
-  const accountLiabilities = accounts
+  const totalLiabilities = accounts
     .filter(a => a.include_in_net_worth && a.balance < 0)
     .reduce((s, a) => s + Math.abs(a.balance), 0)
-  const loanLiabilities = loans.reduce((s, l) => s + l.outstanding_balance, 0)
-  const totalLiabilities = accountLiabilities + loanLiabilities
   const netWorth = assets - totalLiabilities
 
   return (
