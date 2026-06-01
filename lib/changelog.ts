@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.011'
+export const APP_VERSION = '1.012'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.012',
+    date: '2026-05-31',
+    title: 'Telegram 机器人：/link 命令 + 图片/语音修复',
+    changes: [
+      '🔗 新增 /link 邮箱 命令：无需打开 App，直接在 Telegram 绑定账号',
+      '📸 图片识别修复：明确使用 image/jpeg MIME 类型（Telegram 图片统一为 JPEG）',
+      '🎤 语音识别修复：明确使用 audio/ogg MIME 类型（Telegram 语音消息为 OGG Opus）',
+      '🛡️ 增加 try/catch 错误捕获，图片/语音处理失败时返回友好提示',
+    ],
+  },
   {
     version: '1.011',
     date: '2026-05-31',

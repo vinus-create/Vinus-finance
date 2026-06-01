@@ -6,11 +6,15 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
 async function sendMsg(chatId: number, text: string, parseMode = 'Markdown') {
   if (!BOT_TOKEN) return
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
-  })
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
+    })
+  } catch (e) {
+    console.error('[TG sendMsg]', e)
+  }
 }
 
 async function getFile(fileId: string): Promise<string | null> {
@@ -23,7 +27,8 @@ async function getFile(fileId: string): Promise<string | null> {
 
 async function downloadFile(url: string): Promise<{ base64: string; mimeType: string }> {
   const res = await fetch(url)
-  const mimeType = res.headers.get('content-type')?.split(';')[0].trim() || 'image/jpeg'
+  const ct = res.headers.get('content-type') || ''
+  const mimeType = ct.split(';')[0].trim() || 'application/octet-stream'
   const buffer = await res.arrayBuffer()
   return { base64: Buffer.from(buffer).toString('base64'), mimeType }
 }
@@ -39,49 +44,86 @@ export async function POST(request: NextRequest) {
   const fromId = (message.from as Record<string, unknown>)?.id as number
   const firstName = (message.from as Record<string, unknown>)?.first_name as string ?? 'there'
   const text = (message.text as string ?? '').trim()
-  const upperText = text.toUpperCase()
 
-  // Use admin client — webhook has no user session, anon RLS blocks profile lookup
   const supabase = createAdminClient()
 
-  // ── Look up user by telegram_id ──────────────────────────
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .eq('telegram_id', fromId)
-    .single()
+  // ── Look up user by telegram_id (with graceful fallback) ──
+  let profile: { id: string; full_name: string | null } | null = null
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('telegram_id', fromId)
+      .single()
+    profile = data
+  } catch {
+    // Column might not exist yet — profile stays null
+  }
 
-  // ── /start — always respond, show link instructions ──────
+  // ── /start ───────────────────────────────────────────────
   if (text.startsWith('/start')) {
     if (profile) {
       await sendMsg(chatId,
-        `👋 Welcome back *${(profile.full_name as string | null) ?? firstName}*!\n\n` +
-        `Send me any transaction:\n` +
-        `• Text: \`rm15 nasi lemak\`\n` +
-        `• Photo: receipt 📸\n` +
-        `• Voice note 🎤\n\n` +
+        `👋 Welcome back *${profile.full_name ?? firstName}*!\n\n` +
+        `Send me any transaction:\n• Text: \`rm15 nasi lemak\`\n• Photo: receipt 📸\n• Voice note 🎤\n\n` +
         `Commands: /undo /report /help`
       )
     } else {
       await sendMsg(chatId,
         `👋 Hi *${firstName}*! I'm your Vinus Finance bot 🤖\n\n` +
-        `To link your account:\n` +
-        `1. Open Vinus Finance app\n` +
-        `2. Go to ⚙️ *Settings*\n` +
-        `3. Enter your Telegram ID: \`${fromId}\`\n\n` +
-        `_Your Telegram ID is: \`${fromId}\`_`
+        `*Option 1 — App Settings:*\n` +
+        `1. Open Vinus Finance → Settings\n` +
+        `2. Enter Telegram ID: \`${fromId}\`\n\n` +
+        `*Option 2 — Link here directly:*\n` +
+        `Send: \`/link your@email.com\`\n\n` +
+        `_Your Telegram ID: \`${fromId}\`_`
       )
     }
     return NextResponse.json({ ok: true })
   }
 
-  // ── Not linked — ask to link ─────────────────────────────
+  // ── /link <email> — link account directly in Telegram ────
+  if (text.toLowerCase().startsWith('/link ')) {
+    const email = text.slice(6).trim().toLowerCase()
+    try {
+      // Find user by email via admin auth
+      const { data: { users } } = await supabase.auth.admin.listUsers()
+      const user = users?.find((u: { email?: string }) => u.email?.toLowerCase() === email)
+      if (!user) {
+        await sendMsg(chatId, `❌ No account found with email: \`${email}\`\n\nMake sure you registered with this email.`)
+      } else {
+        // Save telegram_id to profile
+        const { error } = await supabase
+          .from('profiles')
+          .update({ telegram_id: fromId })
+          .eq('id', user.id)
+        if (error) {
+          // Column might not exist — provide SQL
+          await sendMsg(chatId,
+            `⚠️ Linking failed: \`${error.message}\`\n\n` +
+            `Please run this SQL in Supabase:\n` +
+            `\`\`\`\nALTER TABLE profiles ADD COLUMN IF NOT EXISTS telegram_id BIGINT;\n\`\`\`\n` +
+            `Then try /link again.`
+          )
+        } else {
+          await sendMsg(chatId,
+            `✅ *Linked successfully!*\n\nYour Telegram is now connected to \`${email}\`\n\nTry sending: \`rm15 nasi lemak\``
+          )
+          return NextResponse.json({ ok: true })
+        }
+      }
+    } catch (err) {
+      await sendMsg(chatId, `❌ Error: ${String(err)}`)
+    }
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── Not linked ────────────────────────────────────────────
   if (!profile) {
     await sendMsg(chatId,
-      `❌ Your Telegram account isn't linked yet.\n\n` +
-      `1. Open Vinus Finance app\n` +
-      `2. Settings → Telegram ID → enter \`${fromId}\`\n` +
-      `3. Save and come back here`
+      `❌ Account not linked.\n\n` +
+      `Send: \`/link your@email.com\`\n` +
+      `Or: Settings → Telegram ID → enter \`${fromId}\``
     )
     return NextResponse.json({ ok: true })
   }
@@ -90,8 +132,8 @@ export async function POST(request: NextRequest) {
   let reply = ''
 
   try {
-    // ── /undo — delete last transaction (10 min) ─────────
-    if (upperText === '/UNDO' || text === '/undo') {
+    // ── /undo ────────────────────────────────────────────────
+    if (text === '/undo') {
       const since = new Date(Date.now() - 10 * 60 * 1000).toISOString()
       const { data: last } = await supabase
         .from('transactions').select('id, merchant_name, description, amount, type')
@@ -102,88 +144,84 @@ export async function POST(request: NextRequest) {
         const name = (last.merchant_name as string | null) || (last.description as string | null) || 'transaction'
         reply = `✅ Deleted: *${name}* RM${Number(last.amount).toFixed(2)}`
       } else {
-        reply = `❌ No recent transaction to undo (only works within 10 minutes).`
+        reply = `❌ No recent transaction to undo (10 min window only).`
       }
 
-    // ── /report — 7 day summary ──────────────────────────
-    } else if (text === '/report' || upperText === '/REPORT') {
+    // ── /report ──────────────────────────────────────────────
+    } else if (text === '/report') {
       const since = new Date(); since.setDate(since.getDate() - 7)
-      const sinceStr = since.toISOString().slice(0, 10)
       const { data: txns } = await supabase
-        .from('transactions').select('type, amount, expense_category')
-        .eq('user_id', userId).gte('transaction_date', sinceStr)
+        .from('transactions').select('type, amount')
+        .eq('user_id', userId).gte('transaction_date', since.toISOString().slice(0, 10))
       const income = (txns ?? []).filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
       const expense = (txns ?? []).filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
       const net = income - expense
-      reply = `📊 *Last 7 days*\n\n` +
-        `💰 Income: RM${income.toFixed(2)}\n` +
-        `💸 Expenses: RM${expense.toFixed(2)}\n` +
-        `📈 Net: ${net >= 0 ? '+' : ''}RM${net.toFixed(2)}\n` +
-        `📝 ${(txns ?? []).length} transactions\n\n` +
-        `[View full report](https://vinus-finance.vercel.app/transactions)`
+      reply = `📊 *Last 7 days*\n\n💰 Income: RM${income.toFixed(2)}\n💸 Expenses: RM${expense.toFixed(2)}\n📈 Net: ${net >= 0 ? '+' : ''}RM${net.toFixed(2)}\n📝 ${(txns ?? []).length} txns\n\n[View app](https://vinus-finance.vercel.app/transactions)`
 
-    // ── /help ────────────────────────────────────────────
-    } else if (text === '/help' || upperText === '/HELP') {
-      reply = `🤖 *Vinus Finance Bot*\n\n` +
-        `*Log a transaction:*\n` +
-        `• Text: \`rm15 nasi lemak\`\n` +
-        `• Text: \`rm4500 gaji\`\n` +
-        `• Photo: send a receipt 📸\n` +
-        `• Voice: send a voice note 🎤\n\n` +
-        `*Commands:*\n` +
-        `/undo — delete last transaction\n` +
-        `/report — 7-day summary\n` +
-        `/help — this message`
+    // ── /help ────────────────────────────────────────────────
+    } else if (text === '/help') {
+      reply = `🤖 *Vinus Finance Bot*\n\n*Log a transaction:*\n• Text: \`rm15 nasi lemak\`\n• Text: \`rm4500 gaji\`\n• Photo: receipt 📸\n• Voice note 🎤\n\n*Commands:*\n/undo — delete last (10 min)\n/report — 7-day summary\n/help — this message`
 
-    // ── Text message → parse transaction ─────────────────
+    // ── Text → parse transaction ─────────────────────────────
     } else if (text && !text.startsWith('/')) {
       const result = await parseTextTransaction(text)
       if (!result.success || result.transactions.length === 0) {
-        reply = `❓ Couldn't parse that. Try:\n\`rm15 nasi lemak\`\n\`rm4500 salary\`\n/help for more`
+        reply = `❓ Couldn't parse. Try:\n\`rm15 nasi lemak\`\n\`rm4500 salary\``
       } else {
         const txn = result.transactions[0]
         await saveTxn(supabase, userId, txn)
         reply = formatConfirmation(txn)
       }
 
-    // ── Photo → parse receipt ────────────────────────────
+    // ── Photo → receipt OCR ──────────────────────────────────
     } else if (message.photo) {
-      const photos = message.photo as Array<{ file_id: string; file_size: number }>
-      const largest = photos.sort((a, b) => b.file_size - a.file_size)[0]
-      const fileUrl = await getFile(largest.file_id)
-      if (fileUrl) {
-        await sendMsg(chatId, '📸 Processing receipt...')
-        const { base64, mimeType } = await downloadFile(fileUrl)
-        const result = await parseImageTransaction(base64, mimeType as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif')
+      await sendMsg(chatId, '📸 Processing receipt...')
+      try {
+        const photos = message.photo as Array<{ file_id: string; file_size?: number }>
+        const largest = photos.sort((a, b) => (b.file_size ?? 0) - (a.file_size ?? 0))[0]
+        const fileUrl = await getFile(largest.file_id)
+        if (!fileUrl) throw new Error('Could not get file URL')
+        const { base64 } = await downloadFile(fileUrl)
+        // Telegram photos are always JPEG
+        const result = await parseImageTransaction(base64, 'image/jpeg')
         if (result.success && result.transactions.length > 0) {
-          const txn = result.transactions[0]
-          await saveTxn(supabase, userId, txn)
-          reply = formatConfirmation(txn)
+          await saveTxn(supabase, userId, result.transactions[0])
+          reply = formatConfirmation(result.transactions[0])
         } else {
-          reply = `📸 Couldn't read receipt. Please send a clearer photo.`
+          reply = `📸 Couldn't read the receipt clearly. Try a better-lit photo.`
         }
+      } catch (err) {
+        console.error('[TG photo]', err)
+        reply = `📸 Photo processing failed. Please try again.`
       }
 
-    // ── Voice / Audio → transcribe + parse ──────────────
+    // ── Voice note → transcribe + parse ─────────────────────
     } else if (message.voice || message.audio) {
-      const audio = (message.voice ?? message.audio) as Record<string, unknown>
-      const fileUrl = await getFile(audio.file_id as string)
-      if (fileUrl) {
-        await sendMsg(chatId, '🎤 Processing voice note...')
-        const { base64, mimeType } = await downloadFile(fileUrl)
-        const result = await parseVoiceAudioTransaction(base64, mimeType || 'audio/ogg')
+      await sendMsg(chatId, '🎤 Processing voice note...')
+      try {
+        const audio = (message.voice ?? message.audio) as Record<string, unknown>
+        const fileUrl = await getFile(audio.file_id as string)
+        if (!fileUrl) throw new Error('Could not get audio URL')
+        const { base64 } = await downloadFile(fileUrl)
+        // Telegram voice = OGG Opus
+        const result = await parseVoiceAudioTransaction(base64, 'audio/ogg')
         if (result.success && result.transactions.length > 0) {
-          const txn = result.transactions[0]
-          await saveTxn(supabase, userId, txn)
-          reply = formatConfirmation(txn)
+          await saveTxn(supabase, userId, result.transactions[0])
+          reply = formatConfirmation(result.transactions[0])
         } else {
-          reply = `🎤 Couldn't understand. Try typing it instead.`
+          reply = `🎤 Couldn't understand. Try typing instead.`
         }
+      } catch (err) {
+        console.error('[TG voice]', err)
+        reply = `🎤 Voice processing failed. Please try typing instead.`
       }
+
+    } else {
+      reply = `Send a transaction text, photo, or voice note.\n/help for commands.`
     }
 
   } catch (err) {
-    console.error('[Telegram]', err)
+    console.error('[TG main]', err)
     reply = '⚠️ Something went wrong. Please try again.'
   }
 
@@ -193,7 +231,7 @@ export async function POST(request: NextRequest) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function saveTxn(supabase: any, userId: string, txn: any) {
-  await supabase.from('transactions').insert({
+  const { error } = await supabase.from('transactions').insert({
     user_id: userId,
     type: txn.type,
     amount: txn.amount,
@@ -207,6 +245,7 @@ async function saveTxn(supabase: any, userId: string, txn: any) {
     ledger: txn.ledger || 'personal',
     is_tax_deductible: txn.is_tax_deductible,
   })
+  if (error) console.error('[TG saveTxn]', error)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,10 +253,5 @@ function formatConfirmation(txn: any): string {
   const sign = txn.type === 'income' ? '+' : '-'
   const emoji = txn.type === 'income' ? '💰' : txn.type === 'transfer' ? '🔄' : '💸'
   const name = txn.merchant_name || txn.description || 'Transaction'
-  return `${emoji} *Saved!*\n\n` +
-    `*${name}*\n` +
-    `${sign}RM ${txn.amount.toFixed(2)}\n` +
-    `📅 ${txn.transaction_date}\n` +
-    `🏦 ${txn.account_name || 'Cash'}\n\n` +
-    `_Reply /undo to delete (10 min)_`
+  return `${emoji} *Saved!*\n\n*${name}*\n${sign}RM ${txn.amount.toFixed(2)}\n📅 ${txn.transaction_date}\n🏦 ${txn.account_name || 'Cash'}\n\n_/undo to delete (10 min)_`
 }
