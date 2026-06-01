@@ -1,4 +1,4 @@
-import { getFlashModel } from './gemini'
+import { getFlashModel, getFlashModelHQ } from './gemini'
 import { buildTextPrompt, buildImagePrompt, buildBankStatementPrompt, buildVoiceAudioPrompt, buildInvestmentStatementPrompt } from './prompts'
 import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
 
@@ -215,7 +215,7 @@ export async function parseImageTransaction(
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' = 'image/jpeg'
 ): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = getFlashModelHQ() // Use HQ model for better receipt OCR
     const result = await withRetry(() => model.generateContent([
       { text: buildImagePrompt() },
       { inlineData: { mimeType, data: base64Data } },
@@ -235,7 +235,7 @@ export async function parseVoiceAudioTransaction(
   mimeType: string,
 ): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = getFlashModelHQ() // Use HQ model for better accent/dialect handling
     const result = await withRetry(() => model.generateContent([
       { text: buildVoiceAudioPrompt() },
       { inlineData: { mimeType, data: base64Data } },

@@ -12,13 +12,25 @@ function getGenAI(): GoogleGenerativeAI {
   return _genAI
 }
 
-// gemini-2.5-flash-lite — fast, cheap, multimodal (text + vision + PDF)
+// gemini-2.5-flash-lite — fast, cheap, for text + PDF
 export function getFlashModel(): GenerativeModel {
   return getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash-lite',
     generationConfig: {
       responseMimeType: 'application/json',
-      temperature: 0.1, // Low temp for deterministic structured output
+      temperature: 0.1,
+    },
+  })
+}
+
+// gemini-2.5-flash — higher quality, for voice audio + receipt images
+// Better at handling accents, short clips, and noisy photos
+export function getFlashModelHQ(): GenerativeModel {
+  return getGenAI().getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.2, // Slightly higher for ambiguous speech/images
     },
   })
 }

@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.013'
+export const APP_VERSION = '1.014'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.014',
+    date: '2026-06-01',
+    title: '语音/图片识别升级至 Gemini Flash 标准版',
+    changes: [
+      '🧠 语音和图片识别改用 gemini-2.5-flash（标准版），比 flash-lite 更准确',
+      '📝 语音提示词强化金额识别：lima=RM5 而非 RM500，食物价格区间 RM3-30',
+      '🗣️ 新增常见马来西亚食品词汇：da chang 大肠、tau foo fa 豆腐花等',
+      '🌡️ 语音/图片模型温度从 0.1 调整至 0.2（对模糊语音更宽容）',
+    ],
+  },
   {
     version: '1.013',
     date: '2026-06-01',

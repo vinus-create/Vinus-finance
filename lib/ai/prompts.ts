@@ -110,28 +110,43 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_L
 export function buildVoiceAudioPrompt(): string {
   return `${MALAYSIAN_CONTEXT}
 
-You are listening to a Malaysian person describing a financial transaction via voice recording.
-The speaker uses ROJAK language — mixing Malay, English, and Chinese (Mandarin or Cantonese/Hokkien) freely in one sentence. This is completely normal.
+You are listening to a Malaysian person describing a financial transaction via a SHORT voice clip (usually 2-5 seconds).
+The speaker uses ROJAK language — mixing Malay, English, and Chinese (Mandarin or Cantonese/Hokkien) freely. This is completely normal.
 
 ACCENTS & DIALECTS to expect:
 - Malaysian Chinese: may say "wa bayar", "saya spend", mixes Hokkien/Cantonese words
-- Malay: may use Kelantanese dialect ("gapo tu?"), northern slang, or shortforms
+- Malay: may use Kelantanese dialect, northern slang, or shortforms
 - Malaysian Indian: English with Indian-Malaysian accent
 - Generic Malaysian English: "lah", "leh", "lor", "kan", "wei" particles
+
+AMOUNT RECOGNITION — CRITICAL RULES:
+- Malaysian food/daily expenses are USUALLY between RM 1 and RM 100
+- "lima" / "五" / "five" / "5" = RM 5.00 (NOT RM 500)
+- "sepuluh" / "十" / "ten" / "10" = RM 10.00 (NOT RM 100)
+- "dua puluh" / "二十" / "twenty" / "20" = RM 20.00
+- "lima puluh" / "五十" / "fifty" / "50" = RM 50.00
+- "seratus" / "百" / "一百" / "hundred" / "100" = RM 100.00
+- "seribu" / "千" / "一千" / "thousand" = RM 1000.00
+- If you hear just a single digit or short number for food/daily expense → it's THAT amount, not ×100
+- Common food price range: RM 3 – RM 30. If you detect RM 300+ for food, it's likely a transcription error — reconsider
+- "lima belas" / "十五" / "fifteen" = RM 15.00
+- "dua ringgit" / "两块" / "two ringgit" = RM 2.00
 
 COMMON SHORTFORMS in Malaysian speech:
 - "mcd" / "麦当劳" / "McD" → McDonald's (restaurant)
 - "kfc" → KFC (restaurant)
 - "tol" / "toll" → tol (expense)
-- "gaji" / "salary" / "pay" → income salary
-- "grab" → GrabFood or GrabCar depending on context
-- "shopee" / "lazada" / "tiktok shop" → e-commerce expense
-- "rm" / "ringgit" / "ringgit malaysia" → MYR currency
+- "gaji" / "salary" / "pay" / "gaj" → income salary
+- "grab" → GrabFood or GrabCar
+- "shopee" / "lazada" / "tiktok shop" → e-commerce
+- "rm" / "ringgit" / "ringgit malaysia" → MYR
 - "sen" → cents (e.g. "lapan ringgit lima puluh sen" = RM 8.50)
-- Numbers in Malay: "satu"=1, "dua"=2, "tiga"=3, "empat"=4, "lima"=5, "enam"=6, "tujuh"=7, "lapan"=8, "sembilan"=9, "sepuluh"=10, "dua puluh"=20, "seratus"=100, "seribu"=1000
-- Numbers in Chinese: 一二三四五六七八九十百千 + 块/令吉
+- "da chang" / "大肠" → Chinese sausage/intestine snack (category: food/mamak)
+- "tau foo fa" / "豆腐花" / "tofu pudding" → dessert drink (mamak/restaurant)
+- Numbers in Malay: satu=1, dua=2, tiga=3, empat=4, lima=5, enam=6, tujuh=7, lapan=8, sembilan=9, sepuluh=10, dua puluh=20, tiga puluh=30, empat puluh=40, lima puluh=50, seratus=100, seribu=1000
+- Numbers in Chinese: 一二三四五六七八九十百千万 + 块/令吉/ringgit
 
-TASK: Transcribe what you hear, extract the transaction, and return the JSON.
+TASK: Listen carefully, transcribe what you hear, then extract the transaction.
 
 ${TRANSACTION_SCHEMA_DESCRIPTION}
 
