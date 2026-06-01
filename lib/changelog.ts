@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.007'
+export const APP_VERSION = '1.008'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.008',
+    date: '2026-05-31',
+    title: 'WhatsApp 机器人升级',
+    changes: [
+      '💬 WhatsApp 机器人功能完善：UNDO（10分钟内撤销）、REPORT（7天摘要）、HELP 命令',
+      '🎤 支持 WhatsApp 语音消息记账（直接发送语音，AI 转录并解析）',
+      '📸 支持发送收据图片到 WhatsApp 自动识别并记录',
+    ],
+  },
   {
     version: '1.007',
     date: '2026-05-31',
