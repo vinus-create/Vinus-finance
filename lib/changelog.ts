@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.015'
+export const APP_VERSION = '1.016'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.016',
+    date: '2026-06-01',
+    title: '优化语音处理速度',
+    changes: [
+      '⚡ 文件下载超时限制 10 秒，防止卡死',
+      '⚡ Gemini 重试间隔从 1s/2s 缩短为 500ms/1s',
+    ],
+  },
   {
     version: '1.015',
     date: '2026-06-01',

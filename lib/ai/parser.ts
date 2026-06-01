@@ -73,14 +73,14 @@ function todayMY(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })
 }
 
-/** Calls fn() with exponential backoff — 2 retries, delays 1s / 2s */
+/** Calls fn() with exponential backoff — 2 retries, delays 500ms / 1s */
 async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   for (let i = 0; i <= retries; i++) {
     try {
       return await fn()
     } catch (err) {
       if (i === retries) throw err
-      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)))
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, i)))
     }
   }
   throw new Error('unreachable')

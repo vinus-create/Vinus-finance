@@ -63,9 +63,15 @@ async function getFile(fileId: string): Promise<string | null> {
 }
 
 async function downloadFile(url: string): Promise<{ base64: string }> {
-  const res = await fetch(url)
-  const buffer = await res.arrayBuffer()
-  return { base64: Buffer.from(buffer).toString('base64') }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000) // 10s max
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    const buffer = await res.arrayBuffer()
+    return { base64: Buffer.from(buffer).toString('base64') }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 // Encode transaction for callback_data (max 64 bytes)
