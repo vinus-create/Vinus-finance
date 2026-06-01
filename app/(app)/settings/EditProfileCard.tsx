@@ -11,13 +11,15 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 interface Props {
   initialName: string | null
   initialPhone: string | null
+  initialTelegramId: string | null
   email: string
 }
 
-export default function EditProfileCard({ initialName, initialPhone, email }: Props) {
+export default function EditProfileCard({ initialName, initialPhone, initialTelegramId, email }: Props) {
   const { t } = useLang()
   const [name, setName] = useState(initialName ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
+  const [telegramId, setTelegramId] = useState(initialTelegramId ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +34,12 @@ export default function EditProfileCard({ initialName, initialPhone, email }: Pr
       if (!user) throw new Error('Session expired')
       const { error: err } = await supabase
         .from('profiles')
-        .update({ full_name: name || null, phone_number: phone || null, updated_at: new Date().toISOString() })
+        .update({
+          full_name: name || null,
+          phone_number: phone || null,
+          telegram_id: telegramId ? Number(telegramId) : null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id)
       if (err) throw new Error(err.message)
       setSaved(true)
@@ -80,6 +87,25 @@ export default function EditProfileCard({ initialName, initialPhone, email }: Pr
             inputMode="tel"
           />
           <p className="text-[10px] text-muted-foreground">{t.settings_whatsapp_hint}</p>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground">🤖 Telegram ID</p>
+            <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full">推荐</span>
+          </div>
+          <Input
+            value={telegramId}
+            onChange={e => setTelegramId(e.target.value)}
+            placeholder="e.g. 123456789"
+            className="h-9 text-sm font-mono"
+            inputMode="numeric"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            发送 /start 给 <strong>@VinusFinanceBot</strong> 获取你的 Telegram ID
+          </p>
         </div>
 
         {error && <p className="text-xs text-red-500">{error}</p>}

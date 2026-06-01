@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.009'
+export const APP_VERSION = '1.010'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.010',
+    date: '2026-05-31',
+    title: 'Telegram 机器人（替换 WhatsApp）',
+    changes: [
+      '🤖 新增 Telegram 机器人：文字/图片/语音记账，/undo /report /help 命令',
+      '⚙️ 设置页面新增 Telegram ID 绑定入口',
+      '🔧 中间件白名单新增 /api/telegram 路径',
+      '🗑️ WhatsApp 保留但不再主推（Meta 验证门槛太高）',
+    ],
+  },
   {
     version: '1.009',
     date: '2026-05-31',
