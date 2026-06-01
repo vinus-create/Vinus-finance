@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.014'
+export const APP_VERSION = '1.015'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.015',
+    date: '2026-06-01',
+    title: '恢复使用 flash-lite 模型',
+    changes: [
+      '⚡ 语音和图片识别恢复使用 gemini-2.5-flash-lite（更快、更省费用）',
+      '📝 保留改进后的语音提示词（金额规则、马来西亚食品词汇）',
+    ],
+  },
   {
     version: '1.014',
     date: '2026-06-01',
