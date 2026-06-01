@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.010'
+export const APP_VERSION = '1.011'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.011',
+    date: '2026-05-31',
+    title: '修复 Telegram/WhatsApp 机器人用户识别失败',
+    changes: [
+      '🔧 Webhook 改用管理员客户端（service role）查询 profiles 表——匿名请求被 RLS 阻止导致无法识别用户，这就是"账号未绑定"错误的根本原因',
+    ],
+  },
   {
     version: '1.010',
     date: '2026-05-31',

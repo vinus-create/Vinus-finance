@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
   const text = (message.text as string ?? '').trim()
   const upperText = text.toUpperCase()
 
-  const supabase = await createClient()
+  // Use admin client — webhook has no user session, anon RLS blocks profile lookup
+  const supabase = createAdminClient()
 
   // ── Look up user by telegram_id ──────────────────────────
   const { data: profile } = await supabase

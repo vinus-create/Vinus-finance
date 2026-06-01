@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'vinus-finance-verify'
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   const from = message.from as string
   const msgType = message.type as string
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // ── Look up user by phone number ───────────────────────────
   const { data: profile } = await supabase
