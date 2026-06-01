@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.008'
+export const APP_VERSION = '1.009'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.009',
+    date: '2026-05-31',
+    title: '修复 WhatsApp Webhook 验证失败',
+    changes: [
+      '🔧 将 /api/whatsapp 路径加入中间件白名单，解决 Meta 验证时被重定向到登录页的问题',
+    ],
+  },
   {
     version: '1.008',
     date: '2026-05-31',
