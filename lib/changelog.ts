@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.012'
+export const APP_VERSION = '1.013'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.013',
+    date: '2026-06-01',
+    title: 'Telegram 确认按钮：防止语音/图片误识别',
+    changes: [
+      '✅ 语音和图片解析后不立即保存，先显示 [✅ Save] [❌ Discard] 确认按钮',
+      '📝 文字输入仍然直接保存（文字准确率高）',
+      '🔍 确认消息显示完整解析结果：名称、金额、日期、账户、类别',
+      '⚡ Telegram Webhook 新增 callback_query 事件处理',
+    ],
+  },
   {
     version: '1.012',
     date: '2026-05-31',
