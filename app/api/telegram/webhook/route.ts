@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
 
+// Allow function to run up to 60s (Vercel default = 10s, kills slow voice parsing)
+export const maxDuration = 60
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
 // ─── Telegram API helpers ─────────────────────────────────────
@@ -15,25 +18,37 @@ async function sendMsg(chatId: number, text: string) {
   }).catch(e => console.error('[TG send]', e))
 }
 
-async function sendConfirm(chatId: number, text: string, saveData: string) {
-  if (!BOT_TOKEN) return
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '✅ Save', callback_data: `save|${saveData}` },
+async function sendConfirm(chatId: number, text: string, saveData: string): Promise<boolean> {
+  if (!BOT_TOKEN) return false
+  const callbackData = `save|${saveData}`
+  // Telegram hard limit: callback_data must be 1–64 bytes
+  if (Buffer.byteLength(callbackData, 'utf8') > 64) {
+    console.error('[TG confirm] callback_data too long:', callbackData.length, callbackData)
+    return false
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[
+            { text: '✅ Save', callback_data: callbackData },
             { text: '❌ Discard', callback_data: 'discard' },
-          ]
-        ]
-      }
-    }),
-  }).catch(e => console.error('[TG confirm]', e))
+          ]]
+        }
+      }),
+    })
+    const data = await res.json() as { ok: boolean; description?: string }
+    if (!data.ok) console.error('[TG confirm fail]', data.description)
+    return data.ok
+  } catch (e) {
+    console.error('[TG confirm]', e)
+    return false
+  }
 }
 
 async function editMsg(chatId: number, msgId: number, text: string) {
@@ -74,13 +89,47 @@ async function downloadFile(url: string): Promise<{ base64: string }> {
   }
 }
 
-// Encode transaction for callback_data (max 64 bytes)
+// Encode transaction for callback_data — MUST fit in 64 bytes total
+// (Telegram hard limit; exceeding it causes the sendMessage to silently fail)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function encodeTxn(txn: any): string {
-  const name = (txn.merchant_name || txn.description || '').slice(0, 20).replace(/\|/g, '')
-  const cat = (txn.expense_category || txn.income_category || '').slice(0, 20)
-  // format: type|amount|category|name|account|date
-  return `${txn.type}|${txn.amount}|${cat}|${name}|${(txn.account_name || 'Cash').slice(0, 10)}|${txn.transaction_date}|${txn.ledger || 'personal'}|${txn.is_tax_deductible ? '1' : '0'}`
+  const t = txn.type[0] // 'e' | 'i' | 't'
+  const a = Number(txn.amount).toFixed(2)
+  // Use first 3 chars of category as a short code; full category re-derived on save
+  const cat = (txn.expense_category || txn.income_category || 'oth').slice(0, 12)
+  // Aggressively truncate name to 12 chars (most important info is amount + category)
+  const name = (txn.merchant_name || txn.description || '').slice(0, 12).replace(/\|/g, '')
+  // Date as MM-DD only — year always current
+  const d = txn.transaction_date.slice(5)
+  // Single char for ledger / tax
+  const lt = `${(txn.ledger || 'p')[0]}${txn.is_tax_deductible ? '1' : '0'}`
+  // Final shape (max ~40 bytes): save|e|5.00|grocery|Fried Chicke|06-01|p0
+  return `${t}|${a}|${cat}|${name}|${d}|${lt}`
+}
+
+// Decode the compact callback data back into a transaction row
+function decodeTxn(data: string): {
+  type: 'expense' | 'income' | 'transfer'
+  amount: number
+  category: string
+  name: string
+  date: string
+  ledger: 'personal' | 'business'
+  isTax: boolean
+} {
+  const parts = data.split('|')
+  const typeChar = parts[0] || 'e'
+  const type = typeChar === 'i' ? 'income' : typeChar === 't' ? 'transfer' : 'expense'
+  const amount = parseFloat(parts[1] || '0')
+  const category = parts[2] || 'other_expense'
+  const name = parts[3] || ''
+  const mmdd = parts[4] || ''
+  const year = new Date().getFullYear()
+  const date = mmdd ? `${year}-${mmdd}` : new Date().toISOString().slice(0, 10)
+  const lt = parts[5] || 'p0'
+  const ledger = lt[0] === 'b' ? 'business' : 'personal'
+  const isTax = lt[1] === '1'
+  return { type, amount, category, name, date, ledger, isTax }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,43 +165,40 @@ export async function POST(request: NextRequest) {
     }
 
     if (cbData.startsWith('save|')) {
-      // Find user
+      // Answer callback immediately so the button shows feedback right away
+      await answerCallback(cbId, '⏳ Saving...')
+
       const { data: profile } = await supabase.from('profiles').select('id').eq('telegram_id', fromId).single()
       if (!profile) {
-        await answerCallback(cbId, 'Account not linked')
+        await editMsg(chatId, msgId, '❌ Account not linked')
         return NextResponse.json({ ok: true })
       }
 
-      // Parse encoded transaction
-      const parts = cbData.replace('save|', '').split('|')
-      const [type, amountStr, category, name, account, date, ledger, taxStr] = parts
-      const amount = parseFloat(amountStr)
+      const decoded = decodeTxn(cbData.replace('save|', ''))
 
       const row: Record<string, unknown> = {
         user_id: profile.id,
-        type,
-        amount,
+        type: decoded.type,
+        amount: decoded.amount,
         currency: 'MYR',
-        description: name || null,
-        merchant_name: name || null,
-        transaction_date: date,
-        account_name: account || 'Cash',
-        ledger: ledger || 'personal',
-        is_tax_deductible: taxStr === '1',
+        description: decoded.name || null,
+        merchant_name: decoded.name || null,
+        transaction_date: decoded.date,
+        account_name: 'Cash',
+        ledger: decoded.ledger,
+        is_tax_deductible: decoded.isTax,
       }
-      if (type === 'expense') row.expense_category = category || 'other_expense'
-      else if (type === 'income') row.income_category = category || 'other_income'
+      if (decoded.type === 'expense') row.expense_category = decoded.category
+      else if (decoded.type === 'income') row.income_category = decoded.category
 
       const { error } = await supabase.from('transactions').insert(row)
       if (error) {
         await editMsg(chatId, msgId, `❌ Save failed: ${error.message}`)
-        await answerCallback(cbId, 'Failed')
       } else {
-        const sign = type === 'income' ? '+' : '-'
+        const sign = decoded.type === 'income' ? '+' : '-'
         await editMsg(chatId, msgId,
-          `💸 *Saved!*\n\n*${name || 'Transaction'}*\n${sign}RM ${amount.toFixed(2)}\n📅 ${date}\n🏦 ${account}\n\n_/undo to delete (10 min)_`
+          `💸 *Saved!*\n\n*${decoded.name || 'Transaction'}*\n${sign}RM ${decoded.amount.toFixed(2)}\n📅 ${decoded.date}\n🏦 Cash\n\n_/undo to delete (10 min)_`
         )
-        await answerCallback(cbId, '✅ Saved!')
       }
       return NextResponse.json({ ok: true })
     }
@@ -279,7 +325,12 @@ export async function POST(request: NextRequest) {
         const result = await parseImageTransaction(base64, 'image/jpeg')
         if (result.success && result.transactions.length > 0) {
           const txn = result.transactions[0]
-          await sendConfirm(chatId, formatPreview(txn), encodeTxn(txn))
+          const sent = await sendConfirm(chatId, formatPreview(txn), encodeTxn(txn))
+          if (!sent) {
+            // Fallback: save directly if button send failed
+            await saveTxn(supabase, userId, txn)
+            await sendMsg(chatId, formatSaved(txn))
+          }
         } else {
           await sendMsg(chatId, `📸 Couldn't read receipt. Try a clearer photo.`)
         }
@@ -299,7 +350,12 @@ export async function POST(request: NextRequest) {
         const result = await parseVoiceAudioTransaction(base64, 'audio/ogg')
         if (result.success && result.transactions.length > 0) {
           const txn = result.transactions[0]
-          await sendConfirm(chatId, formatPreview(txn), encodeTxn(txn))
+          const sent = await sendConfirm(chatId, formatPreview(txn), encodeTxn(txn))
+          if (!sent) {
+            // Fallback: save directly if button send failed
+            await saveTxn(supabase, userId, txn)
+            await sendMsg(chatId, formatSaved(txn))
+          }
         } else {
           await sendMsg(chatId, `🎤 Couldn't understand. Try typing instead.`)
         }

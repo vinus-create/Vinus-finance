@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.016'
+export const APP_VERSION = '1.017'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.017',
+    date: '2026-06-02',
+    title: '修复 Telegram 语音/图片无响应',
+    changes: [
+      '🐛 根本原因：确认按钮 callback_data 超过 Telegram 64 字节限制，导致消息发送失败',
+      '⚡ Vercel 函数超时上调至 60 秒（默认 10 秒会杀掉慢的语音处理）',
+      '🗜️ 紧凑编码：type=1字符, 日期=MM-DD, 名字截断 12 字符',
+      '🛡️ 兜底机制：如果按钮消息发送失败，直接保存交易并通知用户',
+      '🔁 回调点击后立即响应"正在保存..."，按钮不再卡住',
+    ],
+  },
   {
     version: '1.016',
     date: '2026-06-01',
