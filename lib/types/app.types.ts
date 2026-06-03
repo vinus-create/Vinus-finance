@@ -223,12 +223,15 @@ export interface Account {
   updated_at: string
 }
 
+export type AssetType = 'stock' | 'etf' | 'gold' | 'crypto' | 'mutual_fund' | 'other'
+
 export interface StockHolding {
   id: string
   user_id: string
   ticker: string
   company_name: string | null
   exchange: string | null
+  asset_type: AssetType
   shares: number
   avg_cost_price: number
   currency: string

@@ -5,9 +5,24 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.025'
+export const APP_VERSION = '1.026'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.026',
+    date: '2026-06-03',
+    title: '投资组合升级：黄金/ETF/基金/加密货币',
+    changes: [
+      '🔄 「股票」模块更名为「投资」，支持 6 种资产类型',
+      '📈 股票：KLSE(.KL) / 美股 / 港股(.HK)',
+      '🔵 ETF：SPY / QQQ / MyETF',
+      '🟡 黄金：GC=F（期货）/ XAUUSD=X / GLD ETF',
+      '₿ 加密货币：BTC-USD / ETH-USD 等（Yahoo Finance 实时价）',
+      '📊 基金/ASB：手动 NAV 录入，无实时价格',
+      '🏷️ 每张持仓卡片显示资产类型 badge + 正确货币符号',
+      '⚠️ 需在 Supabase 执行：ALTER TABLE stock_holdings ADD COLUMN IF NOT EXISTS asset_type TEXT DEFAULT \'stock\';',
+    ],
+  },
   {
     version: '1.025',
     date: '2026-06-03',

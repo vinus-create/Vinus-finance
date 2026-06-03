@@ -39,7 +39,7 @@ export const en: Translations = {
   more_loans: 'Loans & Debts',
   more_tax: 'LHDN Tax',
   more_reminders: 'Bill Reminders',
-  more_stocks: 'Stocks',
+  more_stocks: 'Investments',
   more_budgets: 'Budgets',
   more_settings: 'Settings',
   // ── Accounts ─────────────────────────────────
@@ -367,7 +367,7 @@ export const en: Translations = {
   err_unknown: 'Unknown error',
   err_parse_failed: 'Failed to parse. Please try again.',
   // ── Stocks ───────────────────────────────────
-  stocks_title: 'Stocks',
+  stocks_title: 'Investments',
   stocks_portfolio_tab: 'Portfolio',
   stocks_watchlist_tab: 'Watchlist',
   stocks_history_tab: 'History',

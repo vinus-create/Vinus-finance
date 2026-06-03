@@ -39,7 +39,7 @@ export const ms: Translations = {
   more_loans: 'Pinjaman & Hutang',
   more_tax: 'Cukai LHDN',
   more_reminders: 'Peringatan Bil',
-  more_stocks: 'Saham',
+  more_stocks: 'Pelaburan',
   more_budgets: 'Bajet',
   more_settings: 'Tetapan',
   // ── Accounts ─────────────────────────────────
@@ -367,7 +367,7 @@ export const ms: Translations = {
   err_unknown: 'Ralat tidak diketahui',
   err_parse_failed: 'Gagal menganalisis. Sila cuba lagi.',
   // ── Stocks ───────────────────────────────────
-  stocks_title: 'Saham',
+  stocks_title: 'Pelaburan',
   stocks_portfolio_tab: 'Portfolio',
   stocks_watchlist_tab: 'Senarai Pantau',
   stocks_history_tab: 'Sejarah',

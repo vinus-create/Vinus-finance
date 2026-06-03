@@ -39,7 +39,7 @@ export const zh: Translations = {
   more_loans: '贷款与债务',
   more_tax: 'LHDN 税务',
   more_reminders: '账单提醒',
-  more_stocks: '股票',
+  more_stocks: '投资',
   more_budgets: '月度预算',
   more_settings: '设置',
   // ── Accounts ─────────────────────────────────
@@ -367,7 +367,7 @@ export const zh: Translations = {
   err_unknown: '未知错误',
   err_parse_failed: '解析失败，请重试。',
   // ── Stocks ───────────────────────────────────
-  stocks_title: '股票',
+  stocks_title: '投资组合',
   stocks_portfolio_tab: '持仓',
   stocks_watchlist_tab: '自选股',
   stocks_history_tab: '交易记录',

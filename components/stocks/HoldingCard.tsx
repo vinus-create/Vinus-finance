@@ -48,13 +48,28 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
     }
   }
 
+  const ASSET_META: Record<string, { emoji: string; label: string; unitLabel: string }> = {
+    stock: { emoji: '📈', label: '股票', unitLabel: '股' },
+    etf: { emoji: '🔵', label: 'ETF', unitLabel: '单位' },
+    gold: { emoji: '🟡', label: '黄金', unitLabel: 'g' },
+    crypto: { emoji: '₿', label: '加密货币', unitLabel: '个' },
+    mutual_fund: { emoji: '📊', label: '基金', unitLabel: '单位' },
+    other: { emoji: '💼', label: '其他', unitLabel: '单位' },
+  }
+  const assetMeta = ASSET_META[holding.asset_type ?? 'stock'] ?? ASSET_META['stock']!
+  const currSymbol = holding.currency === 'MYR' ? 'RM' : holding.currency === 'SGD' ? 'S$' : holding.currency === 'HKD' ? 'HK$' : '$'
+
   return (
     <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
+            <span className="text-lg">{assetMeta.emoji}</span>
             <p className="font-bold text-base">{holding.ticker}</p>
+            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+              {assetMeta.label}
+            </span>
             {holding.exchange && (
               <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                 {holding.exchange}
@@ -66,11 +81,14 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-base font-bold">${currentPrice.toFixed(2)}</p>
-          {priceData && (
+          <p className="text-base font-bold">{currSymbol}{currentPrice.toFixed(holding.asset_type === 'crypto' ? 4 : 2)}</p>
+          {priceData && holding.asset_type !== 'mutual_fund' && (
             <p className={`text-xs ${dayChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {dayChange >= 0 ? '+' : ''}{dayChange.toFixed(2)} ({dayChangePct.toFixed(2)}%)
             </p>
+          )}
+          {holding.asset_type === 'mutual_fund' && (
+            <p className="text-[10px] text-muted-foreground">手动 NAV</p>
           )}
         </div>
       </div>
@@ -78,16 +96,16 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <p className="text-[10px] text-muted-foreground">{t.stocks_shares}</p>
+          <p className="text-[10px] text-muted-foreground">{assetMeta.unitLabel}</p>
           <p className="text-xs font-semibold">{holding.shares}</p>
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground">{t.stocks_avg_cost}</p>
-          <p className="text-xs font-semibold">${holding.avg_cost_price.toFixed(2)}</p>
+          <p className="text-xs font-semibold">{currSymbol}{holding.avg_cost_price.toFixed(2)}</p>
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground">{t.stocks_market_value}</p>
-          <p className="text-xs font-semibold">${marketValue.toFixed(2)}</p>
+          <p className="text-xs font-semibold">{currSymbol}{marketValue.toFixed(2)}</p>
         </div>
       </div>
 
@@ -99,7 +117,7 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
       }`}>
         <p className="text-xs text-muted-foreground">{t.stocks_unrealized_pnl}</p>
         <p className={`text-xs font-bold ${unrealizedPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-          {unrealizedPnl >= 0 ? '+' : ''}${unrealizedPnl.toFixed(2)}{' '}
+          {unrealizedPnl >= 0 ? '+' : ''}{currSymbol}{unrealizedPnl.toFixed(2)}{' '}
           ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(2)}%)
         </p>
       </div>
