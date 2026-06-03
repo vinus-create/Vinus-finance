@@ -52,6 +52,24 @@ export async function GET(request: NextRequest) {
 - 本月最近交易：${txns.slice(0, 5).map(t => `${t.merchant_name ?? t.expense_category} -RM${Number(t.amount).toFixed(2)}`).join('；')}
 `.trim()
 
+    function cleanTip(raw: string): string {
+      let text = raw.trim()
+      // Strip markdown code blocks
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim()
+      // If it looks like JSON, extract the text value
+      if (text.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(text)
+          // Try common keys
+          text = parsed.tip ?? parsed.advice ?? parsed.message ?? parsed.content ?? text
+        } catch {
+          // Remove JSON-like wrapping manually
+          text = text.replace(/^\{\s*"[^"]+"\s*:\s*"/, '').replace(/"\s*\}$/, '').trim()
+        }
+      }
+      return text
+    }
+
     const model = getFlashModel()
     const result = await model.generateContent(
       `你是马来西亚个人理财助手 Vinus Finance。请做以下两件事：
@@ -69,7 +87,7 @@ export async function GET(request: NextRequest) {
 用户财务数据：
 ${context}`
     )
-    const tip = result.response.text().trim()
+    const tip = cleanTip(result.response.text())
 
     return NextResponse.json({ tip }, {
       headers: { 'Cache-Control': 'private, max-age=3600' },
