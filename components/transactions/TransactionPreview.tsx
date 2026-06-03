@@ -53,9 +53,13 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
   const [globalLedger, setGlobalLedger] = useState<LedgerType>(() =>
     transactions.some(tx => tx.ledger === 'business') ? 'business' : 'personal'
   )
-  // EPF / SOCSO auto-deduction
+  // Income source — only salary triggers EPF/SOCSO/EIS
+  type IncomeSource = 'salary' | 'side' | 'other'
+  const [incomeSource, setIncomeSource] = useState<IncomeSource>('salary')
+  // EPF / SOCSO / EIS individual toggles
   const [autoEpf, setAutoEpf] = useState(false)
   const [autoSocso, setAutoSocso] = useState(false)
+  const [autoEis, setAutoEis] = useState(false)
   const { t, lang } = useLang()
 
   // ── Load user accounts ────────────────────────────────────
@@ -186,31 +190,31 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         if (acct) await supabase.from('accounts').update({ balance: acct.balance + delta }).eq('id', acct.id)
       }
 
-      // ── EPF / SOCSO auto-deduction ────────────────────────────
+      // ── EPF / SOCSO / EIS auto-deduction (salary only) ────────
       const incomeRows = rows.filter(r => r.type === 'income')
-      if (globalLedger === 'personal' && incomeRows.length > 0 && (autoEpf || autoSocso)) {
+      if (globalLedger === 'personal' && incomeSource === 'salary' && incomeRows.length > 0 && (autoEpf || autoSocso || autoEis)) {
         for (const row of incomeRows) {
           const epf = calcEpfSocso(row.amount)
           const today = row.transaction_date
 
           if (autoSocso) {
-            // Record SOCSO + EIS as expense transactions
-            await supabase.from('transactions').insert([
-              {
-                user_id: user.id, type: 'expense', amount: epf.socsoEmployee,
-                currency: 'MYR', expense_category: 'socso_perkeso',
-                merchant_name: 'PERKESO/SOCSO', description: `SOCSO - ${row.merchant_name ?? '月薪'}`,
-                account_name: row.account_name, transaction_date: today,
-                ledger: 'personal', is_tax_deductible: false,
-              },
-              {
-                user_id: user.id, type: 'expense', amount: epf.eisEmployee,
-                currency: 'MYR', expense_category: 'socso_perkeso',
-                merchant_name: 'EIS/PERKESO', description: `EIS - ${row.merchant_name ?? '月薪'}`,
-                account_name: row.account_name, transaction_date: today,
-                ledger: 'personal', is_tax_deductible: false,
-              },
-            ])
+            await supabase.from('transactions').insert({
+              user_id: user.id, type: 'expense', amount: epf.socsoEmployee,
+              currency: 'MYR', expense_category: 'socso_perkeso',
+              merchant_name: 'PERKESO/SOCSO', description: `SOCSO - ${row.merchant_name ?? '月薪'}`,
+              account_name: row.account_name, transaction_date: today,
+              ledger: 'personal', is_tax_deductible: false,
+            })
+          }
+
+          if (autoEis) {
+            await supabase.from('transactions').insert({
+              user_id: user.id, type: 'expense', amount: epf.eisEmployee,
+              currency: 'MYR', expense_category: 'socso_perkeso',
+              merchant_name: 'EIS/PERKESO', description: `EIS - ${row.merchant_name ?? '月薪'}`,
+              account_name: row.account_name, transaction_date: today,
+              ledger: 'personal', is_tax_deductible: false,
+            })
           }
 
           if (autoEpf) {
@@ -313,8 +317,34 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         {valid.length} {t.preview_detected}
       </p>
 
-      {/* EPF / SOCSO panel — only for personal income */}
-      {globalLedger === 'personal' && valid.some(txn => txn.type === 'income') && (() => {
+      {/* Income source selector — only for personal income */}
+      {globalLedger === 'personal' && valid.some(txn => txn.type === 'income') && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground font-medium shrink-0">收入来源:</span>
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+            {([
+              { value: 'salary', label: '💼 工资' },
+              { value: 'side',   label: '💻 副业' },
+              { value: 'other',  label: '💰 其他' },
+            ] as { value: IncomeSource; label: string }[]).map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setIncomeSource(opt.value)}
+                className={`px-3 py-1.5 transition-colors ${
+                  incomeSource === opt.value
+                    ? 'bg-emerald-500 text-white font-semibold'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* EPF / SOCSO / EIS panel — only for personal salary income */}
+      {globalLedger === 'personal' && incomeSource === 'salary' && valid.some(txn => txn.type === 'income') && (() => {
         const totalIncome = valid.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
         const epf = calcEpfSocso(totalIncome)
         return (
@@ -354,28 +384,39 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                 </div>
               </div>
             </div>
-            {/* Toggles */}
+            {/* Individual toggles for EPF / SOCSO / EIS */}
             <div className="space-y-2 border-t border-blue-200 pt-2">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-xs font-medium">📈 自动添加 EPF 至投资组合</p>
-                  <p className="text-[10px] text-muted-foreground">RM {epf.epfEmployee} 记入 KWSP-EPF 持仓</p>
-                </div>
-                <button onClick={() => setAutoEpf(v => !v)}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${autoEpf ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${autoEpf ? 'translate-x-5' : ''}`} />
-                </button>
-              </label>
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-xs font-medium">🛡️ 自动记录 SOCSO + EIS 扣款</p>
-                  <p className="text-[10px] text-muted-foreground">共扣 RM {(epf.socsoEmployee + epf.eisEmployee).toFixed(2)}</p>
-                </div>
-                <button onClick={() => setAutoSocso(v => !v)}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${autoSocso ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${autoSocso ? 'translate-x-5' : ''}`} />
-                </button>
-              </label>
+              {[
+                {
+                  label: '📈 自动添加 EPF 至投资组合',
+                  sub: `RM ${epf.epfEmployee.toFixed(2)} 记入 KWSP-EPF 持仓`,
+                  active: autoEpf,
+                  toggle: () => setAutoEpf(v => !v),
+                },
+                {
+                  label: '🛡️ 自动记录 SOCSO 扣款',
+                  sub: `扣 RM ${epf.socsoEmployee.toFixed(2)}`,
+                  active: autoSocso,
+                  toggle: () => setAutoSocso(v => !v),
+                },
+                {
+                  label: '📋 自动记录 EIS 扣款',
+                  sub: `扣 RM ${epf.eisEmployee.toFixed(2)}`,
+                  active: autoEis,
+                  toggle: () => setAutoEis(v => !v),
+                },
+              ].map(item => (
+                <label key={item.label} className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-xs font-medium">{item.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{item.sub}</p>
+                  </div>
+                  <button onClick={item.toggle}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${item.active ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.active ? 'translate-x-5' : ''}`} />
+                  </button>
+                </label>
+              ))}
             </div>
           </div>
         )

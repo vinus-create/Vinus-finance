@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.038'
+export const APP_VERSION = '1.039'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.039',
+    date: '2026-06-03',
+    title: 'EPF/SOCSO/EIS 收入来源选择 + 独立开关',
+    changes: [
+      '💼 新增收入来源选择器（工资 / 副业 / 其他），只有工资才显示 EPF 面板',
+      '🔘 EPF、SOCSO、EIS 各自独立 toggle，可单独开关',
+    ],
+  },
   {
     version: '1.038',
     date: '2026-06-03',
