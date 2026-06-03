@@ -14,6 +14,7 @@ export interface ParsedTransaction {
   merchant_name: string | null
   transaction_date: string
   account_name: string
+  to_account_name?: string | null   // for internal transfers only
   ledger: LedgerType
   is_tax_deductible: boolean
   confidence: number

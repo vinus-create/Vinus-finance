@@ -82,9 +82,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
       })
     : (txns ?? [])
 
-  // Month summary (transfers counted as outgoing / expense)
+  // Month summary — internal transfers excluded from both income and expense
   const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
-  const totalExpense = txns?.filter(t => t.type === 'expense' || t.type === 'transfer').reduce((s, t) => s + Number(t.amount), 0) ?? 0
+  const totalExpense = txns?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0
 
   // Group by date (use filtered list)
   const groups: Record<string, typeof filtered> = {}

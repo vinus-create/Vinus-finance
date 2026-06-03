@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.020'
+export const APP_VERSION = '1.021'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.021',
+    date: '2026-06-03',
+    title: '内部转账支持',
+    changes: [
+      '↔️ 新增「转账」tab：直接录入自己户口之间的转账（From → To + 金额 + 日期）',
+      '🚫 内部转账不再计入收入/支出统计，只更新两个户口余额',
+      '🏦 TransactionPreview：选 Transfer 类型时显示 From / To 两个账户选择',
+      '🔧 保存逻辑：transfer 类型正确执行 from_balance -= amount, to_balance += amount',
+    ],
+  },
   {
     version: '1.020',
     date: '2026-06-03',

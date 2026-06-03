@@ -40,7 +40,7 @@ function accountEmoji(type: Account['account_type']): string {
 }
 
 export default function TransactionPreview({ transactions, detectedAccount, onDiscard, onSaved }: Props) {
-  const [edited, setEdited] = useState<ParsedTransaction[]>(() => transactions.map(t => ({ ...t })))
+  const [edited, setEdited] = useState<ParsedTransaction[]>(() => transactions.map(t => ({ ...t, to_account_name: t.to_account_name ?? null })))
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
   const [customAccount, setCustomAccount] = useState<Record<number, string>>({})
   const [showCustomInput, setShowCustomInput] = useState<Record<number, boolean>>({})
@@ -153,6 +153,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         merchant_name: txn.merchant_name || null,
         transaction_date: sanitizeDate(txn.transaction_date),
         account_name: detectedAccount?.name || txn.account_name,
+        to_account_name: txn.type === 'transfer' ? (txn.to_account_name ?? null) : null,
         ledger: globalLedger,
         is_tax_deductible: txn.is_tax_deductible,
       }))
@@ -163,8 +164,16 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
       // ── Update account balances ──────────────────────────────
       const deltaMap = new Map<string, number>()
       for (const row of rows) {
-        const delta = row.type === 'income' ? row.amount : -row.amount  // expense & transfer = outgoing
-        if (delta !== 0) deltaMap.set(row.account_name, (deltaMap.get(row.account_name) ?? 0) + delta)
+        if (row.type === 'transfer') {
+          // Internal transfer: from loses, to gains
+          deltaMap.set(row.account_name, (deltaMap.get(row.account_name) ?? 0) - row.amount)
+          if (row.to_account_name) {
+            deltaMap.set(row.to_account_name, (deltaMap.get(row.to_account_name) ?? 0) + row.amount)
+          }
+        } else {
+          const delta = row.type === 'income' ? row.amount : -row.amount
+          if (delta !== 0) deltaMap.set(row.account_name, (deltaMap.get(row.account_name) ?? 0) + delta)
+        }
       }
       for (const [accountName, delta] of deltaMap) {
         const { data: acct } = await supabase
@@ -327,7 +336,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                     {/* Account picker */}
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                        {t.preview_account_label}
+                        {txn.type === 'transfer' ? '从 (From)' : t.preview_account_label}
                       </p>
                       <div className="flex gap-1.5 flex-wrap">
                         {accounts.map(acct => (
@@ -376,6 +385,34 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                         </div>
                       )}
                     </div>
+
+                    {/* To Account picker — only for transfers */}
+                    {txn.type === 'transfer' && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">到 (To)</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {accounts
+                            .filter(acct => acct.name !== txn.account_name)
+                            .map(acct => (
+                              <button
+                                key={acct.id}
+                                onClick={() => update(i, { to_account_name: acct.name })}
+                                className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                                  txn.to_account_name === acct.name
+                                    ? 'bg-blue-500 border-blue-500 text-white'
+                                    : 'border-border hover:bg-muted'
+                                }`}
+                              >
+                                <span>{accountEmoji(acct.account_type)}</span>
+                                <span>{acct.name}</span>
+                              </button>
+                            ))}
+                        </div>
+                        {!txn.to_account_name && (
+                          <p className="text-[10px] text-amber-500">请选择目标户口</p>
+                        )}
+                      </div>
+                    )}
 
                     {txn.is_tax_deductible && (
                       <p className="text-xs text-blue-500">{t.preview_tax_deductible}</p>
