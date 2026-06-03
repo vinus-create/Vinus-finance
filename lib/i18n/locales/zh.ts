@@ -35,6 +35,7 @@ export const zh: Translations = {
   nav_budgets: '预算',
   nav_accounts: '户口',
   nav_more: '更多',
+  more_bills: '每月账单',
   more_loans: '贷款与债务',
   more_tax: 'LHDN 税务',
   more_reminders: '账单提醒',

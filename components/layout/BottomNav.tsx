@@ -22,6 +22,7 @@ export default function BottomNav() {
   ]
 
   const MORE_ITEMS = [
+    { href: '/bills',     label: t.more_bills,     emoji: '🧾' },
     { href: '/budgets',   label: t.more_budgets,   emoji: '📊' },
     { href: '/loans',     label: t.more_loans,     emoji: '🏦' },
     { href: '/stocks',    label: t.more_stocks,    emoji: '📈' },

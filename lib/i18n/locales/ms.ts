@@ -35,6 +35,7 @@ export const ms: Translations = {
   nav_budgets: 'Bajet',
   nav_accounts: 'Akaun',
   nav_more: 'Lagi',
+  more_bills: 'Bil Bulanan',
   more_loans: 'Pinjaman & Hutang',
   more_tax: 'Cukai LHDN',
   more_reminders: 'Peringatan Bil',

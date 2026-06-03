@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.023'
+export const APP_VERSION = '1.024'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.024',
+    date: '2026-06-03',
+    title: '每月账单页面',
+    changes: [
+      '🧾 新增「每月账单」页面（Menu 第一位）',
+      '➕ 可添加固定账单：TNB、Unifi、水费、Maintenance 等，带快选预设',
+      '✏️ 可编辑 / 删除已有账单',
+      '🔔 开关「添加至账单提醒」：自动创建每月提醒，到期前 3 天通知',
+      '📊 开关「添加至月度预算」：自动更新当月该类别预算金额',
+      '📅 账单按到期日排序，标记「⚡ X 天后到期」',
+      '⚠️ 需在 Supabase SQL Editor 建表：CREATE TABLE monthly_bills ...',
+    ],
+  },
   {
     version: '1.023',
     date: '2026-06-03',

@@ -35,6 +35,7 @@ export const en: Translations = {
   nav_budgets: 'Budgets',
   nav_accounts: 'Accounts',
   nav_more: 'More',
+  more_bills: 'Monthly Bills',
   more_loans: 'Loans & Debts',
   more_tax: 'LHDN Tax',
   more_reminders: 'Bill Reminders',

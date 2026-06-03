@@ -43,6 +43,7 @@ export interface Translations {
   nav_budgets: string
   nav_accounts: string
   nav_more: string
+  more_bills: string
   more_loans: string
   more_tax: string
   more_reminders: string
