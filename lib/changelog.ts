@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.021'
+export const APP_VERSION = '1.022'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.022',
+    date: '2026-06-03',
+    title: '还款时选择户口',
+    changes: [
+      '🏦 贷款还款页面：新增户口选择器，显示各户口余额',
+      '💳 还款记录 account_name 使用所选户口（不再写死 Cash）',
+      '💰 还款后自动从所选户口余额扣除还款金额',
+    ],
+  },
   {
     version: '1.021',
     date: '2026-06-03',

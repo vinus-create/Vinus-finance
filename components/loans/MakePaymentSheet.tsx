@@ -10,7 +10,12 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { calcPaymentSplit, advanceMonths } from '@/lib/utils/loan-math'
 import { useLang } from '@/lib/i18n/LanguageProvider'
-import type { Loan } from '@/lib/types/app.types'
+import type { Loan, Account } from '@/lib/types/app.types'
+
+function accountEmoji(type: Account['account_type']): string {
+  const map: Record<string, string> = { bank: '🏦', ewallet: '💳', investment: '📈', cash: '💵', credit_card: '💳', other: '🏧' }
+  return map[type] ?? '🏦'
+}
 
 interface Props {
   loan: Loan
@@ -24,13 +29,29 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
   const [saving, setSaving] = useState(false)
   const [amount, setAmount] = useState(loan.monthly_payment.toFixed(2))
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [selectedAccount, setSelectedAccount] = useState('Cash')
 
-  // Reset to latest loan values when sheet opens
+  // Load accounts + reset form when sheet opens
   useEffect(() => {
-    if (open) {
-      setAmount(loan.monthly_payment.toFixed(2))
-      setDate(new Date().toISOString().slice(0, 10))
-    }
+    if (!open) return
+    setAmount(loan.monthly_payment.toFixed(2))
+    setDate(new Date().toISOString().slice(0, 10))
+
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('accounts').select('*').eq('user_id', user.id).eq('is_active', true)
+        .order('created_at').then(({ data }) => {
+          if (data && data.length > 0) {
+            const accts = data as Account[]
+            setAccounts(accts)
+            // Default: prefer Cash account, else first account
+            const cash = accts.find(a => a.account_type === 'cash' || a.name.toLowerCase().includes('cash'))
+            setSelectedAccount(cash?.name ?? accts[0]!.name)
+          }
+        })
+    })
   }, [open, loan.monthly_payment])
 
   const paymentAmt = parseFloat(amount) || 0
@@ -67,11 +88,16 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
         expense_category: 'loan_repayment',
         description: loan.name,
         merchant_name: loan.lender_name ?? null,
-        account_name: 'Cash',
+        account_name: selectedAccount,
         transaction_date: date,
         is_tax_deductible: false,
       })
       if (txnErr) throw new Error(txnErr.message)
+
+      // 1b. Deduct from selected account balance
+      const { data: acct } = await supabase.from('accounts').select('id, balance')
+        .eq('user_id', user.id).eq('name', selectedAccount).maybeSingle()
+      if (acct) await supabase.from('accounts').update({ balance: acct.balance - paymentAmt }).eq('id', acct.id)
 
       // 2. Update loan
       const { error: loanErr } = await supabase.from('loans').update({
@@ -130,6 +156,32 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
               className="h-11"
             />
           </div>
+
+          {/* Account picker */}
+          {accounts.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">从哪个户口还款</Label>
+              <div className="flex flex-wrap gap-2">
+                {accounts.map(acct => (
+                  <button
+                    key={acct.id}
+                    onClick={() => setSelectedAccount(acct.name)}
+                    className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border transition-colors ${
+                      selectedAccount === acct.name
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <span>{accountEmoji(acct.account_type)}</span>
+                    <span>{acct.name}</span>
+                    <span className={`text-xs ${selectedAccount === acct.name ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      RM {Number(acct.balance).toFixed(2)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Breakdown */}
           {paymentAmt > 0 && (
