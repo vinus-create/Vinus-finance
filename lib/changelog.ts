@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.041'
+export const APP_VERSION = '1.042'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.042',
+    date: '2026-06-03',
+    title: '存钱目标：每月需存 + 届时年龄',
+    changes: [
+      '📅 每张目标卡显示「每月需存 RM X / 月 × N 个月」',
+      '🎂 根据出生日期推算目标日期时的年龄（需在设置填写）',
+      '📊 顶部汇总新增「每月需存总计」',
+      '⚙️ 设置 → 个人资料 新增出生日期字段',
+    ],
+  },
   {
     version: '1.041',
     date: '2026-06-03',

@@ -15,12 +15,41 @@ import { cn } from '@/lib/utils'
 const EMOJIS = ['🎯', '🏠', '🚗', '✈️', '💍', '🎓', '💻', '📱', '🏖️', '💰', '🎁', '🛒']
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
+// ── Helpers ──────────────────────────────────────────────────────
+
+function calcMonthsRemaining(targetDate: string): number {
+  const today = new Date()
+  const target = new Date(targetDate)
+  return Math.max(0, (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth()))
+}
+
+function calcMonthlyNeeded(goal: SavingsGoal): number | null {
+  if (!goal.target_date) return null
+  const remaining = Math.max(0, goal.target_amount - goal.current_amount)
+  if (remaining <= 0) return 0
+  const months = calcMonthsRemaining(goal.target_date)
+  if (months <= 0) return null   // overdue — can't divide by 0
+  return Math.ceil(remaining / months)
+}
+
+function calcAgeAtDate(dob: string, targetDate: string): number {
+  const d = new Date(dob)
+  const t = new Date(targetDate)
+  let age = t.getFullYear() - d.getFullYear()
+  const mDiff = t.getMonth() - d.getMonth()
+  if (mDiff < 0 || (mDiff === 0 && t.getDate() < d.getDate())) age--
+  return age
+}
+
+// ─────────────────────────────────────────────────────────────────
+
 interface Props {
   active: SavingsGoal[]
   completed: SavingsGoal[]
+  userDob: string | null
 }
 
-export default function SavingsGoalsClient({ active, completed }: Props) {
+export default function SavingsGoalsClient({ active, completed, userDob }: Props) {
   const { t } = useLang()
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
@@ -52,9 +81,7 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
       if (!user) throw new Error(t.err_session)
       const { error: e } = await supabase.from('savings_goals').insert({
         user_id: user.id,
-        name: name.trim(),
-        emoji,
-        color,
+        name: name.trim(), emoji, color,
         target_amount: parseFloat(targetAmount),
         current_amount: parseFloat(currentAmount) || 0,
         target_date: targetDate || null,
@@ -95,9 +122,13 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
     const remaining = Math.max(0, goal.target_amount - goal.current_amount)
     const today = new Date().toISOString().slice(0, 10)
     const isOverdue = !goal.is_completed && goal.target_date && goal.target_date < today
+    const monthlyNeeded = calcMonthlyNeeded(goal)
+    const monthsLeft = goal.target_date ? calcMonthsRemaining(goal.target_date) : null
+    const ageAtTarget = (userDob && goal.target_date) ? calcAgeAtDate(userDob, goal.target_date) : null
 
     return (
       <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+        {/* Title row */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{goal.emoji}</span>
@@ -106,35 +137,66 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
               {goal.is_completed ? (
                 <span className="text-xs text-emerald-600 font-medium">{t.goal_completed_badge}</span>
               ) : goal.target_date ? (
-                <p className={cn('text-xs', isOverdue ? 'text-red-500' : 'text-muted-foreground')}>
-                  {isOverdue ? t.receivable_overdue : `${t.goal_target_date}: ${goal.target_date}`}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className={cn('text-xs', isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground')}>
+                    {isOverdue ? t.receivable_overdue : `${goal.target_date}`}
+                  </p>
+                  {ageAtTarget !== null && ageAtTarget > 0 && (
+                    <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 px-1.5 py-0.5 rounded-full font-medium">
+                      届时 {ageAtTarget} 岁
+                    </span>
+                  )}
+                  {monthsLeft !== null && monthsLeft > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      剩 {monthsLeft} 个月
+                    </span>
+                  )}
+                </div>
               ) : null}
             </div>
           </div>
-          <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-red-500 text-lg leading-none px-1">×</button>
+          <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-red-500 text-lg leading-none px-1 shrink-0">×</button>
         </div>
 
+        {/* Progress bar */}
         <div className="space-y-1">
-          <Progress value={pct} className="h-2.5" style={{ '--progress-color': goal.color } as React.CSSProperties} />
+          <Progress value={pct} className="h-2.5" />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{t.goal_saved}: RM {goal.current_amount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}</span>
             <span className="font-semibold text-foreground">{pct}%</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <span className="text-muted-foreground">{t.goal_target}: </span>
             <span className="font-medium">RM {goal.target_amount.toLocaleString('en-MY', { minimumFractionDigits: 2 })}</span>
           </div>
-          {!goal.is_completed && (
+          {!goal.is_completed && remaining > 0 && (
             <div className="text-right">
               <span className="text-muted-foreground">{t.goal_remaining}: </span>
               <span className="font-medium text-orange-500">RM {remaining.toLocaleString('en-MY', { minimumFractionDigits: 2 })}</span>
             </div>
           )}
         </div>
+
+        {/* Monthly needed chip */}
+        {!goal.is_completed && monthlyNeeded !== null && monthlyNeeded > 0 && (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+            <span className="text-base">📅</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground">每月需存</p>
+              <p className="text-sm font-bold text-blue-600">
+                RM {monthlyNeeded.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+                <span className="text-[10px] font-normal text-muted-foreground ml-1">/ 月 × {monthsLeft} 个月</span>
+              </p>
+            </div>
+          </div>
+        )}
+        {!goal.is_completed && isOverdue && (
+          <p className="text-xs text-red-500 font-medium">⚠️ 已超过目标日期</p>
+        )}
 
         {!goal.is_completed && (
           <Button size="sm" onClick={() => { setDepositGoal(goal); setDepositAmount('') }}
@@ -148,7 +210,14 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
 
   return (
     <div className="px-4 mt-4 pb-24 space-y-4">
-      {/* Active goals */}
+      {/* No DOB hint */}
+      {!userDob && active.some(g => g.target_date) && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 text-xs text-purple-700 dark:text-purple-400">
+          <span>🎂</span>
+          <p>在<strong>设置 → 个人资料</strong>填写出生日期，可显示达成目标时的年龄</p>
+        </div>
+      )}
+
       {active.length === 0 && completed.length === 0 ? (
         <EmptyState emoji="🎯" title={t.savings_goals_empty} body={t.savings_goals_empty_hint} />
       ) : (
@@ -179,7 +248,6 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-safe">
           <SheetHeader className="mb-4"><SheetTitle>{t.form_add_goal}</SheetTitle></SheetHeader>
           <div className="space-y-4 px-1 pb-6">
-            {/* Emoji picker */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">{t.form_goal_emoji}</p>
               <div className="flex flex-wrap gap-2">
@@ -192,7 +260,6 @@ export default function SavingsGoalsClient({ active, completed }: Props) {
               </div>
             </div>
 
-            {/* Color picker */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">颜色</p>
               <div className="flex gap-2">

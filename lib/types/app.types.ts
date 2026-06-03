@@ -113,6 +113,7 @@ export interface Profile {
   ic_number: string | null
   tax_identification_number: string | null
   tax_form_type: TaxFormType
+  date_of_birth: string | null
   currency: string
   locale: string
   timezone: string

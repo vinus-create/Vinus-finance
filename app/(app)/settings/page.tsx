@@ -20,7 +20,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email_reminders, tax_form_type, phone_number, telegram_id')
+    .select('full_name, email_reminders, tax_form_type, phone_number, telegram_id, date_of_birth')
     .eq('id', user.id)
     .single()
 
@@ -32,6 +32,7 @@ export default async function SettingsPage() {
           initialName={profile?.full_name ?? null}
           initialPhone={(profile as { phone_number?: string | null })?.phone_number ?? null}
           initialTelegramId={(profile as { telegram_id?: number | null })?.telegram_id?.toString() ?? null}
+          initialDob={(profile as { date_of_birth?: string | null })?.date_of_birth ?? null}
           email={user.email ?? ''}
         />
 

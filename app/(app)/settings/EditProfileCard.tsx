@@ -12,14 +12,16 @@ interface Props {
   initialName: string | null
   initialPhone: string | null
   initialTelegramId: string | null
+  initialDob: string | null
   email: string
 }
 
-export default function EditProfileCard({ initialName, initialPhone, initialTelegramId, email }: Props) {
+export default function EditProfileCard({ initialName, initialPhone, initialTelegramId, initialDob, email }: Props) {
   const { t } = useLang()
   const [name, setName] = useState(initialName ?? '')
   const [phone, setPhone] = useState(initialPhone ?? '')
   const [telegramId, setTelegramId] = useState(initialTelegramId ?? '')
+  const [dob, setDob] = useState(initialDob ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,6 +40,7 @@ export default function EditProfileCard({ initialName, initialPhone, initialTele
           full_name: name || null,
           phone_number: phone || null,
           telegram_id: telegramId ? Number(telegramId) : null,
+          date_of_birth: dob || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -87,6 +90,19 @@ export default function EditProfileCard({ initialName, initialPhone, initialTele
             inputMode="tel"
           />
           <p className="text-[10px] text-muted-foreground">{t.settings_whatsapp_hint}</p>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">🎂 出生日期</p>
+          <Input
+            type="date"
+            value={dob}
+            onChange={e => setDob(e.target.value)}
+            className="h-9 text-sm"
+          />
+          <p className="text-[10px] text-muted-foreground">用于存钱目标「届时年龄」计算</p>
         </div>
 
         <Separator />
