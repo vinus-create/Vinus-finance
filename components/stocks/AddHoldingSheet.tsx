@@ -41,10 +41,11 @@ const ASSET_TYPES: { type: AssetType; emoji: string; label: string; unitLabel: s
   },
   {
     type: 'gold', emoji: '🟡', label: '黄金', unitLabel: '克 (g)',
-    tickerHint: 'XAUUSD=X (国际金价) 或手动',
-    currencyDefault: 'USD',
+    tickerHint: 'GOLD-MYR-GRAM（RM/克）或 GC=F（USD/oz）',
+    currencyDefault: 'MYR',
     presets: [
-      { ticker: 'GC=F', name: 'Gold Futures (USD/oz)' },
+      { ticker: 'GOLD-MYR-GRAM', name: '黄金 RM/克（实时）' },
+      { ticker: 'GC=F', name: 'Gold Futures USD/oz' },
       { ticker: 'XAUUSD=X', name: 'XAU/USD Spot' },
       { ticker: 'GLD', name: 'SPDR Gold ETF' },
     ],
@@ -237,7 +238,7 @@ export default function AddHoldingSheet({ open, onOpenChange, holding }: Props) 
             {!isMutualFund && (
               <p className="text-[10px] text-muted-foreground">
                 {form.assetType === 'crypto' ? '🔗 使用 Yahoo Finance 格式，如 BTC-USD'
-                  : form.assetType === 'gold' ? '🔗 GC=F（期货 USD/oz）或 XAUUSD=X'
+                  : form.assetType === 'gold' ? '🔗 GOLD-MYR-GRAM = 实时 RM/克（推荐）；GC=F = USD/oz'
                   : '🔗 KLSE 加 .KL 后缀，如 1155.KL'}
               </p>
             )}

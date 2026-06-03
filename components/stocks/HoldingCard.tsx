@@ -20,6 +20,7 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  const isGoldMyrGram = holding.ticker === 'GOLD-MYR-GRAM'
   const currentPrice = priceData?.price ?? holding.avg_cost_price
   const marketValue = holding.shares * currentPrice
   const costBasis = holding.shares * holding.avg_cost_price
@@ -81,7 +82,10 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-base font-bold">{currSymbol}{currentPrice.toFixed(holding.asset_type === 'crypto' ? 4 : 2)}</p>
+          <p className="text-base font-bold">
+            {currSymbol}{currentPrice.toFixed(holding.asset_type === 'crypto' ? 4 : 2)}
+            {isGoldMyrGram && <span className="text-xs font-normal text-muted-foreground">/g</span>}
+          </p>
           {priceData && holding.asset_type !== 'mutual_fund' && (
             <p className={`text-xs ${dayChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {dayChange >= 0 ? '+' : ''}{dayChange.toFixed(2)} ({dayChangePct.toFixed(2)}%)

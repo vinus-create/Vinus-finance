@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.031'
+export const APP_VERSION = '1.032'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.032',
+    date: '2026-06-03',
+    title: '黄金 RM/克 实时价格',
+    changes: [
+      '🟡 新增特殊 ticker: GOLD-MYR-GRAM — 实时获取 XAU/USD × USD/MYR ÷ 31.1035 = RM/克',
+      '🥇 黄金默认货币改为 MYR，快选第一项为「黄金 RM/克（实时）」',
+      '📊 持仓卡片显示 RM XX.XX/g 格式',
+    ],
+  },
   {
     version: '1.031',
     date: '2026-06-03',
