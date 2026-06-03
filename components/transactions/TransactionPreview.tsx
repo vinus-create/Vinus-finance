@@ -15,6 +15,7 @@ import type { LangCode } from '@/lib/i18n'
 import SuccessCelebration from '@/components/ui/SuccessCelebration'
 import type { DetectedAccount } from './PDFParser'
 import { calcEpfSocso } from '@/lib/utils/epf-socso'
+import { calcPcb } from '@/lib/utils/pcb'
 
 interface Props {
   transactions: ParsedTransaction[]
@@ -56,10 +57,12 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
   // Income source — only salary triggers EPF/SOCSO/EIS
   type IncomeSource = 'salary' | 'side' | 'other'
   const [incomeSource, setIncomeSource] = useState<IncomeSource>('salary')
-  // EPF / SOCSO / EIS individual toggles
+  // EPF / SOCSO / EIS / PCB individual toggles
   const [autoEpf, setAutoEpf] = useState(false)
   const [autoSocso, setAutoSocso] = useState(false)
   const [autoEis, setAutoEis] = useState(false)
+  const [autoPcb, setAutoPcb] = useState(false)
+  const [isMarried, setIsMarried] = useState(false)
   const { t, lang } = useLang()
 
   // ── Load user accounts ────────────────────────────────────
@@ -190,9 +193,9 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         if (acct) await supabase.from('accounts').update({ balance: acct.balance + delta }).eq('id', acct.id)
       }
 
-      // ── EPF / SOCSO / EIS auto-deduction (salary only) ────────
+      // ── EPF / SOCSO / EIS / PCB auto-deduction (salary only) ──
       const incomeRows = rows.filter(r => r.type === 'income')
-      if (globalLedger === 'personal' && incomeSource === 'salary' && incomeRows.length > 0 && (autoEpf || autoSocso || autoEis)) {
+      if (globalLedger === 'personal' && incomeSource === 'salary' && incomeRows.length > 0 && (autoEpf || autoSocso || autoEis || autoPcb)) {
         for (const row of incomeRows) {
           const epf = calcEpfSocso(row.amount)
           const today = row.transaction_date
@@ -249,6 +252,19 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
               account_name: row.account_name, transaction_date: today,
               ledger: 'personal', is_tax_deductible: false,
             })
+          }
+
+          if (autoPcb) {
+            const pcbResult = calcPcb(row.amount, isMarried)
+            if (pcbResult.monthlyPcb > 0) {
+              await supabase.from('transactions').insert({
+                user_id: user.id, type: 'expense', amount: pcbResult.monthlyPcb,
+                currency: 'MYR', expense_category: 'income_tax',
+                merchant_name: 'LHDN/PCB', description: `PCB 月扣税 - ${row.merchant_name ?? '月薪'}`,
+                account_name: row.account_name, transaction_date: today,
+                ledger: 'personal', is_tax_deductible: false,
+              })
+            }
           }
         }
       }
@@ -343,13 +359,31 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         </div>
       )}
 
-      {/* EPF / SOCSO / EIS panel — only for personal salary income */}
+      {/* EPF / SOCSO / EIS / PCB panel — only for personal salary income */}
       {globalLedger === 'personal' && incomeSource === 'salary' && valid.some(txn => txn.type === 'income') && (() => {
         const totalIncome = valid.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
         const epf = calcEpfSocso(totalIncome)
+        const pcb = calcPcb(totalIncome, isMarried)
+        const netAfterAll = epf.netTakehome - pcb.monthlyPcb
         return (
           <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 space-y-3">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">🏦 EPF / SOCSO / EIS 自动计算</p>
+            {/* Header + marital status toggle */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">🏦 EPF / SOCSO / EIS / PCB</p>
+              <div className="flex rounded-lg border border-blue-300 overflow-hidden text-[10px]">
+                {([
+                  { v: false, label: '单身' },
+                  { v: true,  label: '已婚' },
+                ] as { v: boolean; label: string }[]).map(opt => (
+                  <button key={String(opt.v)} onClick={() => setIsMarried(opt.v)}
+                    className={`px-2.5 py-1 transition-colors ${isMarried === opt.v ? 'bg-blue-600 text-white font-semibold' : 'bg-transparent text-blue-600'}`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Breakdown table */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="space-y-1.5">
                 <div className="flex justify-between">
@@ -361,19 +395,25 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                   <span className="font-medium text-blue-600">−RM {epf.epfEmployee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">SOCSO 雇员 (0.5%)</span>
+                  <span className="text-muted-foreground">SOCSO (0.5%)</span>
                   <span className="font-medium text-blue-600">−RM {epf.socsoEmployee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">EIS 雇员 (0.2%)</span>
+                  <span className="text-muted-foreground">EIS (0.2%)</span>
                   <span className="font-medium text-blue-600">−RM {epf.eisEmployee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">PCB 月扣税</span>
+                  <span className="font-medium text-orange-500">
+                    {pcb.monthlyPcb > 0 ? `−RM ${pcb.monthlyPcb.toFixed(2)}` : 'RM 0'}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-blue-200 pt-1.5">
                   <span className="font-semibold">到手工资</span>
-                  <span className="font-bold text-emerald-600">RM {epf.netTakehome.toFixed(2)}</span>
+                  <span className="font-bold text-emerald-600">RM {netAfterAll.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 text-[10px]">
                 <div className="flex justify-between text-muted-foreground">
                   <span>雇主 EPF (13%)</span>
                   <span>+RM {epf.epfEmployer.toFixed(2)}</span>
@@ -382,9 +422,29 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                   <span>EPF 总计</span>
                   <span>RM {(epf.epfEmployee + epf.epfEmployer).toFixed(2)}</span>
                 </div>
+                <div className="border-t border-blue-200 pt-1.5 space-y-1">
+                  <p className="text-muted-foreground font-medium">PCB 估算依据</p>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>年收入</span>
+                    <span>RM {pcb.annualGross.toLocaleString('en-MY')}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>减免合计</span>
+                    <span>RM {(pcb.epfDeduction + pcb.personalRelief + pcb.spouseRelief).toLocaleString('en-MY')}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>应税收入</span>
+                    <span>RM {pcb.chargeableIncome.toLocaleString('en-MY')}</span>
+                  </div>
+                  <div className="flex justify-between font-medium text-orange-500">
+                    <span>年税额</span>
+                    <span>RM {pcb.annualTax.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            {/* Individual toggles for EPF / SOCSO / EIS */}
+
+            {/* Individual toggles */}
             <div className="space-y-2 border-t border-blue-200 pt-2">
               {[
                 {
@@ -405,13 +465,22 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                   active: autoEis,
                   toggle: () => setAutoEis(v => !v),
                 },
+                {
+                  label: '🏛️ 自动记录 PCB 月扣税',
+                  sub: pcb.monthlyPcb > 0 ? `扣 RM ${pcb.monthlyPcb.toFixed(2)} → 记录为支出 (income_tax)` : '月薪未达扣税门槛',
+                  active: autoPcb,
+                  toggle: () => setAutoPcb(v => !v),
+                  disabled: pcb.monthlyPcb === 0,
+                },
               ].map(item => (
-                <label key={item.label} className="flex items-center justify-between cursor-pointer">
+                <label key={item.label} className={`flex items-center justify-between cursor-pointer ${(item as { disabled?: boolean }).disabled ? 'opacity-40' : ''}`}>
                   <div>
                     <p className="text-xs font-medium">{item.label}</p>
                     <p className="text-[10px] text-muted-foreground">{item.sub}</p>
                   </div>
-                  <button onClick={item.toggle}
+                  <button
+                    onClick={item.toggle}
+                    disabled={(item as { disabled?: boolean }).disabled}
                     className={`relative w-10 h-5 rounded-full transition-colors ${item.active ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.active ? 'translate-x-5' : ''}`} />
                   </button>

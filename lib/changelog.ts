@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.040'
+export const APP_VERSION = '1.041'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.041',
+    date: '2026-06-03',
+    title: 'PCB 月扣税自动计算',
+    changes: [
+      '🏛️ 工资面板新增 PCB（Potongan Cukai Berjadual）月扣税估算',
+      '💍 单身 / 已婚切换，自动套用配偶减免 RM4,000',
+      '📊 显示年收入、减免合计、应税收入、年税额明细',
+      '🔘 独立 toggle：自动记录 PCB 为支出（income_tax 类别）',
+      '✅ 到手工资已扣除 EPF + SOCSO + EIS + PCB 合计',
+    ],
+  },
   {
     version: '1.040',
     date: '2026-06-03',
