@@ -55,11 +55,10 @@ export default function AddLoanSheet({ open, onOpenChange, loan }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState(loan ? loanToForm(loan) : blankForm())
   const [autoRemind, setAutoRemind] = useState(false)
-  const [autoBudget, setAutoBudget] = useState(false)
 
   // Sync form when sheet opens / loan prop changes
   useEffect(() => {
-    if (open) { setForm(loan ? loanToForm(loan) : blankForm()); setAutoRemind(false); setAutoBudget(false) }
+    if (open) { setForm(loan ? loanToForm(loan) : blankForm()); setAutoRemind(false) }
   }, [open, loan])
 
   const LOAN_TYPES = [
@@ -165,19 +164,6 @@ export default function AddLoanSheet({ open, onOpenChange, loan }: Props) {
           notify_email: false,
           days_before: 3,
         })
-      }
-
-      // 📊 Auto-budget: upsert loan_repayment budget for current month
-      if (autoBudget && calc) {
-        const now = new Date()
-        await supabase.from('budgets').upsert({
-          user_id: user.id,
-          period_year: now.getFullYear(),
-          period_month: now.getMonth() + 1,
-          expense_category: 'loan_repayment',
-          budget_amount: calc.monthly,
-          currency: 'MYR',
-        }, { onConflict: 'user_id,period_year,period_month,expense_category' })
       }
 
       onOpenChange(false)
@@ -309,8 +295,8 @@ export default function AddLoanSheet({ open, onOpenChange, loan }: Props) {
             </div>
           )}
 
-          {/* Auto-sync toggles */}
-          <div className="space-y-3 p-3 rounded-xl bg-muted">
+          {/* Auto-remind toggle */}
+          <div className="p-3 rounded-xl bg-muted">
             <label className="flex items-center justify-between cursor-pointer">
               <div>
                 <p className="text-sm font-medium">🔔 添加至账单提醒</p>
@@ -321,18 +307,6 @@ export default function AddLoanSheet({ open, onOpenChange, loan }: Props) {
                 className={`relative w-11 h-6 rounded-full transition-colors ${autoRemind ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoRemind ? 'translate-x-5' : ''}`} />
-              </button>
-            </label>
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <p className="text-sm font-medium">📊 添加至月度预算</p>
-                <p className="text-xs text-muted-foreground">更新 loan_repayment 预算金额</p>
-              </div>
-              <button
-                onClick={() => setAutoBudget(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${autoBudget ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoBudget ? 'translate-x-5' : ''}`} />
               </button>
             </label>
           </div>

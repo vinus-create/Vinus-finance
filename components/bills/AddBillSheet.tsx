@@ -48,7 +48,6 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
   const [emoji, setEmoji] = useState('💡')
   const [category, setCategory] = useState('electricity_tnb')
   const [autoRemind, setAutoRemind] = useState(false)
-  const [autoBudget, setAutoBudget] = useState(false)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -61,11 +60,10 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         setEmoji(editing.emoji)
         setCategory(editing.expense_category ?? 'other_expense')
         setAutoRemind(editing.auto_remind)
-        setAutoBudget(editing.auto_budget)
         setNotes(editing.notes ?? '')
       } else {
         setName(''); setAmount(''); setDueDay('1'); setEmoji('💡')
-        setCategory('electricity_tnb'); setAutoRemind(false); setAutoBudget(false); setNotes('')
+        setCategory('electricity_tnb'); setAutoRemind(false); setNotes('')
       }
     }
   }, [open, editing])
@@ -96,7 +94,7 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         expense_category: category,
         emoji,
         auto_remind: autoRemind,
-        auto_budget: autoBudget,
+        auto_budget: false,
         notes: notes.trim() || null,
         updated_at: new Date().toISOString(),
       }
@@ -133,31 +131,6 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
           notify_email: false,
           days_before: 3,
         })
-      }
-
-      // Sync budget if toggled on
-      if (autoBudget && category) {
-        const now = new Date()
-        const { data: existing } = await supabase.from('budgets')
-          .select('id, budget_amount')
-          .eq('user_id', user.id)
-          .eq('period_year', now.getFullYear())
-          .eq('period_month', now.getMonth() + 1)
-          .eq('expense_category', category)
-          .maybeSingle()
-
-        if (existing) {
-          await supabase.from('budgets').update({ budget_amount: amt, updated_at: new Date().toISOString() }).eq('id', existing.id)
-        } else {
-          await supabase.from('budgets').insert({
-            user_id: user.id,
-            period_year: now.getFullYear(),
-            period_month: now.getMonth() + 1,
-            expense_category: category,
-            budget_amount: amt,
-            currency: 'MYR',
-          })
-        }
       }
 
       toast.success(editing ? '账单已更新' : '账单已添加')
@@ -276,18 +249,6 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
               </button>
             </label>
 
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <p className="text-sm font-medium">📊 添加至月度预算</p>
-                <p className="text-xs text-muted-foreground">更新当月该类别预算金额</p>
-              </div>
-              <button
-                onClick={() => setAutoBudget(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${autoBudget ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoBudget ? 'translate-x-5' : ''}`} />
-              </button>
-            </label>
           </div>
 
           <Button
