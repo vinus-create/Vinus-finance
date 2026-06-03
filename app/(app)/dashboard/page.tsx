@@ -104,7 +104,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const [billsRes, loansRes, budgetsRes, remindersRes] = await Promise.all([
     supabase.from('monthly_bills').select('amount, frequency_months').eq('user_id', user.id).eq('is_active', true),
     supabase.from('loans').select('monthly_payment').eq('user_id', user.id).eq('is_active', true).gt('outstanding_balance', 0),
-    supabase.from('budgets').select('budget_amount').eq('user_id', user.id).eq('period_year', year).eq('period_month', month),
+    supabase.from('budgets').select('budget_amount, expense_category').eq('user_id', user.id).eq('period_year', year).eq('period_month', month),
     isCurrentMonth
       ? supabase.from('reminders').select('id, title, amount, due_date').eq('user_id', user.id).eq('status', 'active')
           .gte('due_date', todayStr).lte('due_date', next7Days).order('due_date').limit(5)
@@ -114,6 +114,11 @@ export default async function DashboardPage({ searchParams }: Props) {
   const totalBills = (billsRes.data ?? []).reduce((s, b) => s + Number(b.amount), 0)
   const totalLoans = (loansRes.data ?? []).reduce((s, l) => s + Number(l.monthly_payment), 0)
   const totalBudget = (budgetsRes.data ?? []).reduce((s, b) => s + Number(b.budget_amount), 0)
+  // Budget spent = only spending in categories that have a budget set (matches budget page logic)
+  const budgetedCategories = new Set((budgetsRes.data ?? []).map(b => b.expense_category))
+  const budgetSpent = (txns ?? [])
+    .filter(t => t.type === 'expense' && budgetedCategories.has(t.expense_category as string))
+    .reduce((s, t) => s + Number(t.amount), 0)
   const upcomingReminders = (remindersRes.data ?? []) as Array<{ id: string; title: string; amount: number | null; due_date: string }>
 
   return (
@@ -230,7 +235,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         totalBills,
         totalLoans,
         totalBudget,
-        budgetSpent: totalExpense,
+        budgetSpent,
         reminders: upcomingReminders,
         userId: user.id,
       }} />
