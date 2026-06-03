@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.018'
+export const APP_VERSION = '1.019'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.019',
+    date: '2026-06-03',
+    title: 'Menu 点击后自动关闭',
+    changes: [
+      '🔧 点击 Menu 里任何菜单项后，底部抽屉自动关闭',
+    ],
+  },
   {
     version: '1.018',
     date: '2026-06-03',

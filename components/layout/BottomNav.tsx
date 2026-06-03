@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { Home, ArrowLeftRight, Plus, Wallet, LayoutGrid } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -10,6 +11,7 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 export default function BottomNav() {
   const pathname = usePathname()
   const { t } = useLang()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const NAV_ITEMS = [
     { href: '/dashboard', label: t.nav_home, icon: Home },
@@ -48,7 +50,7 @@ export default function BottomNav() {
 
           if (item.isMore) {
             return (
-              <Sheet key="more">
+              <Sheet key="more" open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger
                   className="flex flex-col items-center justify-center gap-1 min-w-[3rem] min-h-[2.75rem] px-2 bg-transparent border-0 cursor-pointer"
                   aria-label={t.nav_more}
@@ -69,6 +71,7 @@ export default function BottomNav() {
                       <Link
                         key={mi.href}
                         href={mi.href}
+                        onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 p-4 rounded-xl bg-muted active:bg-muted/70 transition-colors"
                       >
                         <span className="text-2xl">{mi.emoji}</span>
