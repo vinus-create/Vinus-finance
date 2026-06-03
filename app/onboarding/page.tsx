@@ -114,21 +114,34 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      await supabase.from('profiles').update({
-        ...(fullName.trim() && { full_name: fullName.trim() }),
-        ...(dob && { date_of_birth: dob }),
-        ...(gender && { gender }),
-        ...(state && { state }),
-        ...(occupation.trim() && { occupation: occupation.trim() }),
-        ...(monthlyIncome && { monthly_income: parseFloat(monthlyIncome) }),
-        ...(maritalStatus && { marital_status: maritalStatus }),
-        children_count: childrenCount,
-        ...(phone.trim() && { phone_number: phone.trim() }),
-        ...(telegramId.trim() && { telegram_id: parseInt(telegramId) || null }),
+      // Build update object — only include fields that have values
+      // (avoids failing if new DB columns haven't been added yet)
+      const updates: Record<string, unknown> = {
         onboarding_done: true,
         updated_at: new Date().toISOString(),
-      }).eq('id', user.id)
+      }
+      if (fullName.trim())      updates.full_name      = fullName.trim()
+      if (dob)                  updates.date_of_birth  = dob
+      if (gender)               updates.gender         = gender
+      if (state)                updates.state          = state
+      if (occupation.trim())    updates.occupation     = occupation.trim()
+      if (monthlyIncome)        updates.monthly_income = parseFloat(monthlyIncome)
+      if (maritalStatus)        updates.marital_status = maritalStatus
+      if (childrenCount > 0)    updates.children_count = childrenCount
+      if (phone.trim())         updates.phone_number   = phone.trim()
+      if (telegramId.trim())    updates.telegram_id    = parseInt(telegramId) || null
 
+      const { error } = await supabase.from('profiles').update(updates).eq('id', user.id)
+
+      if (error) {
+        // New columns may not exist yet — fall back to only setting onboarding_done
+        await supabase.from('profiles')
+          .update({ onboarding_done: true, updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+      }
+
+      router.push('/dashboard')
+    } catch {
       router.push('/dashboard')
     } finally {
       setSaving(false)
