@@ -16,14 +16,17 @@ export default function BottomNav() {
   const [customizeOpen, setCustomizeOpen] = useState(false)
 
   const DEFAULT_MORE_ITEMS = [
-    { href: '/bills',     label: t.more_bills,     emoji: '🧾' },
-    { href: '/budgets',   label: t.more_budgets,   emoji: '📊' },
-    { href: '/loans',     label: t.more_loans,     emoji: '🏦' },
-    { href: '/stocks',    label: t.more_stocks,    emoji: '📈' },
-    { href: '/insights',  label: t.more_insights,  emoji: '🤖' },
-    { href: '/tax',       label: t.more_tax,       emoji: '🏛️' },
-    { href: '/reminders', label: t.more_reminders, emoji: '🔔' },
-    { href: '/settings',  label: t.more_settings,  emoji: '⚙️' },
+    { href: '/bills',          label: t.more_bills,          emoji: '🧾' },
+    { href: '/budgets',        label: t.more_budgets,        emoji: '📊' },
+    { href: '/loans',          label: t.more_loans,          emoji: '🏦' },
+    { href: '/stocks',         label: t.more_stocks,         emoji: '📈' },
+    { href: '/savings-goals',  label: t.more_savings_goals,  emoji: '🎯' },
+    { href: '/receivables',    label: t.more_receivables,    emoji: '🤝' },
+    { href: '/assets',         label: t.more_assets,         emoji: '🏠' },
+    { href: '/insights',       label: t.more_insights,       emoji: '🤖' },
+    { href: '/tax',            label: t.more_tax,            emoji: '🏛️' },
+    { href: '/reminders',      label: t.more_reminders,      emoji: '🔔' },
+    { href: '/settings',       label: t.more_settings,       emoji: '⚙️' },
   ]
 
   const [moreItems, setMoreItems] = useState(DEFAULT_MORE_ITEMS)

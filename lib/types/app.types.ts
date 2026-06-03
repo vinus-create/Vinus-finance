@@ -282,3 +282,48 @@ export interface Budget {
   created_at: string
   updated_at: string
 }
+
+export interface SavingsGoal {
+  id: string
+  user_id: string
+  name: string
+  emoji: string
+  target_amount: number
+  current_amount: number
+  target_date: string | null
+  color: string
+  is_completed: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Receivable {
+  id: string
+  user_id: string
+  debtor_name: string
+  amount: number
+  description: string | null
+  due_date: string | null
+  is_paid: boolean
+  paid_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type UserAssetType = 'property' | 'vehicle' | 'valuables' | 'business' | 'other'
+
+export interface UserAsset {
+  id: string
+  user_id: string
+  name: string
+  asset_type: UserAssetType
+  estimated_value: number
+  purchase_price: number | null
+  purchase_date: string | null
+  description: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}

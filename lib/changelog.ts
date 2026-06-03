@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.039'
+export const APP_VERSION = '1.040'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.040',
+    date: '2026-06-03',
+    title: '3 新模块：存钱目标 · 谁欠我钱 · 名下资产',
+    changes: [
+      '🎯 存钱目标 — 设定储蓄目标、进度条追踪、一键存入、达成动态',
+      '🤝 谁欠我钱 — 记录借出款项、逾期提醒、一键标记已还清',
+      '🏠 名下资产 — 房产/车辆/贵重物品/生意资产，估值追踪+增值计算',
+      '📱 导航菜单新增 3 个快捷入口',
+    ],
+  },
   {
     version: '1.039',
     date: '2026-06-03',

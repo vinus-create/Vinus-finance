@@ -472,4 +472,78 @@ export interface Translations {
   edit_txn_name_placeholder: string
   edit_txn_category_label: string
   edit_txn_category_placeholder: string
+  // ── Savings Goals ─────────────────────────────
+  more_savings_goals: string
+  savings_goals_title: string
+  savings_goals_total_saved: string
+  savings_goals_total_target: string
+  savings_goals_add_btn: string
+  savings_goals_empty: string
+  savings_goals_empty_hint: string
+  savings_goals_completed: string
+  savings_goals_active: string
+  goal_target: string
+  goal_saved: string
+  goal_remaining: string
+  goal_target_date: string
+  goal_completed_badge: string
+  goal_deposit_btn: string
+  goal_deposit_title: string
+  goal_deposit_amount: string
+  goal_deposit_save: string
+  goal_delete_confirm: string
+  form_add_goal: string
+  form_goal_name: string
+  form_goal_emoji: string
+  form_goal_target: string
+  form_goal_current: string
+  form_goal_date: string
+  form_save_goal: string
+  form_err_goal: string
+  // ── Receivables (谁欠我钱) ────────────────────
+  more_receivables: string
+  receivables_title: string
+  receivables_total_owed: string
+  receivables_unpaid_tab: string
+  receivables_paid_tab: string
+  receivables_empty: string
+  receivables_empty_hint: string
+  receivables_paid_empty: string
+  receivable_due: string
+  receivable_overdue: string
+  receivable_mark_paid: string
+  receivable_delete_confirm: string
+  receivable_paid_on: string
+  form_add_receivable: string
+  form_debtor_name: string
+  form_debtor_placeholder: string
+  form_receivable_amount: string
+  form_receivable_desc: string
+  form_receivable_due: string
+  form_save_receivable: string
+  form_err_receivable: string
+  // ── Assets (名下资产) ─────────────────────────
+  more_assets: string
+  assets_title: string
+  assets_total_value: string
+  assets_empty: string
+  assets_empty_hint: string
+  asset_type_property: string
+  asset_type_vehicle: string
+  asset_type_valuables: string
+  asset_type_business: string
+  asset_type_other: string
+  asset_est_value: string
+  asset_purchase_price: string
+  asset_gain_loss: string
+  asset_delete_confirm: string
+  form_add_asset: string
+  form_asset_name: string
+  form_asset_type: string
+  form_asset_est_value: string
+  form_asset_purchase_price: string
+  form_asset_purchase_date: string
+  form_asset_desc: string
+  form_save_asset: string
+  form_err_asset: string
 }
