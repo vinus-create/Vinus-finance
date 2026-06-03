@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.043'
+export const APP_VERSION = '1.044'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.044',
+    date: '2026-06-03',
+    title: 'AI 财运分析 + 个人财务评估',
+    changes: [
+      '🔮 AI 财运分析：生肖 + 星座 + 数字命理，马来西亚华人文化视角',
+      '👤 AI 个人财务评估：收入对比、储蓄率、净资产、EPF退休规划、3条建议',
+      '📊 Insights 页面升级为 4 Tab：消费分析 · 小票分析 · 财运 · 财务评估',
+      '📈 财务评估显示6项关键指标仪表盘（收入/支出/储蓄率/净资产/EPF/DSR）',
+    ],
+  },
   {
     version: '1.043',
     date: '2026-06-03',
