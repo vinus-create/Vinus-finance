@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.017'
+export const APP_VERSION = '1.018'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.018',
+    date: '2026-06-03',
+    title: '修复 middleware + 加快路由响应速度',
+    changes: [
+      '🐛 修复根本 bug：proxy.ts 从未被 Next.js 识别为 middleware（文件名必须是 middleware.ts）',
+      '⚡ middleware 改用 getSession()（只读 cookie，无网络请求），替代 getUser()（每次向 Supabase 发 HTTP 请求）',
+      '⚡ 预计减少 30-50ms middleware 延迟',
+      '🔄 访问 / 现在正确重定向至 /dashboard 或 /login',
+    ],
+  },
   {
     version: '1.017',
     date: '2026-06-02',
