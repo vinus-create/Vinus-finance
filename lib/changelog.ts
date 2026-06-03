@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.022'
+export const APP_VERSION = '1.023'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.023',
+    date: '2026-06-03',
+    title: '修复还款日期计算',
+    changes: [
+      '📅 下次还款日改用贷款原定日期推算（不再用付款当天日期），月份固定在同一天',
+      '🔧 修复 advanceMonths 月末溢出：Jan 31 + 1 月 → Feb 28（不再跑到 Mar 3）',
+    ],
+  },
   {
     version: '1.022',
     date: '2026-06-03',

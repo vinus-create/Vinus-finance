@@ -69,7 +69,8 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
 
   const newBalance = Math.max(0, loan.outstanding_balance - split.principal)
   const newRemaining = Math.max(0, (loan.remaining_months ?? loan.tenure_months) - 1)
-  const nextPaymentDate = advanceMonths(date, 1)
+  // Advance from the loan's scheduled due date (preserves day-of-month), not from the user's payment date
+  const nextPaymentDate = advanceMonths(loan.next_payment_date ?? loan.start_date, 1)
 
   async function handleSave() {
     if (paymentAmt <= 0) return

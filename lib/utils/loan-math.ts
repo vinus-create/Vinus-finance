@@ -306,9 +306,18 @@ export function calcBalanceAtMonth(
   }
 }
 
-/** Advance a YYYY-MM-DD date by N months */
+/** Advance a YYYY-MM-DD date by N months, preserving the day-of-month.
+ *  If the target month is shorter (e.g. Jan 31 → Feb), clamps to last day of that month. */
 export function advanceMonths(dateStr: string, months: number): string {
   const d = new Date(dateStr + 'T00:00:00')
-  d.setMonth(d.getMonth() + months)
-  return d.toISOString().slice(0, 10)
+  const targetDay = d.getDate()          // preserve original day (e.g. 29)
+  const targetMonth = d.getMonth() + months
+  const targetYear = d.getFullYear() + Math.floor(targetMonth / 12)
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12
+  // Clamp day to last day of target month
+  const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate()
+  const clampedDay = Math.min(targetDay, lastDay)
+  const mm = String(normalizedMonth + 1).padStart(2, '0')
+  const dd = String(clampedDay).padStart(2, '0')
+  return `${targetYear}-${mm}-${dd}`
 }
