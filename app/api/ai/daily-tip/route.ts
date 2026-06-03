@@ -90,7 +90,7 @@ ${context}`
     const tip = cleanTip(result.response.text())
 
     return NextResponse.json({ tip }, {
-      headers: { 'Cache-Control': 'private, max-age=3600' },
+      headers: { 'Cache-Control': 'no-store' },  // always fresh from AI
     })
   } catch (err) {
     console.error('[AI daily tip]', err)

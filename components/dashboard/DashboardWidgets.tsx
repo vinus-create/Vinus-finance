@@ -273,15 +273,15 @@ function AiTipWidget({ userId }: { userId: string }) {
         <button
           onClick={handleRefresh}
           disabled={!canRefresh}
-          title={canRefresh ? `刷新建议（今日剩余 ${remaining} 次）` : '今日已达上限（5次）'}
-          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-colors ${
+          title={canRefresh ? `重新生成建议（今日剩余 ${remaining} 次）` : '今日已达上限（5次）'}
+          className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-colors ${
             canRefresh
-              ? 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 cursor-pointer'
-              : 'text-muted-foreground/40 cursor-not-allowed'
+              ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-900/30 hover:bg-emerald-200/60 dark:hover:bg-emerald-900/50 cursor-pointer'
+              : 'text-muted-foreground/40 bg-muted/40 cursor-not-allowed'
           }`}
         >
-          <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span>
-          <span>{remaining}/{MAX_DAILY_REFRESHES}</span>
+          <span className={loading ? 'animate-spin inline-block' : 'inline-block'}>↻</span>
+          <span>重新生成 {remaining}/{MAX_DAILY_REFRESHES}</span>
         </button>
       </div>
       {loading ? (
