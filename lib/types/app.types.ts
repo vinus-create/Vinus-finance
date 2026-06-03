@@ -114,6 +114,13 @@ export interface Profile {
   tax_identification_number: string | null
   tax_form_type: TaxFormType
   date_of_birth: string | null
+  gender: 'male' | 'female' | 'other' | null
+  marital_status: 'single' | 'married' | 'divorced' | 'widowed' | null
+  state: string | null
+  occupation: string | null
+  monthly_income: number | null
+  children_count: number
+  phone_number: string | null
   currency: string
   locale: string
   timezone: string

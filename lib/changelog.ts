@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.044'
+export const APP_VERSION = '1.045'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.045',
+    date: '2026-06-03',
+    title: '新用户 Onboarding 向导',
+    changes: [
+      '🎉 新用户首次登录自动跳转至 4 步资料填写向导',
+      '👋 Step 1: 姓名、出生日期、性别',
+      '📍 Step 2: 州属、职业、月收入',
+      '👨‍👩‍👧 Step 3: 婚姻状态、子女人数（影响PCB/税务）',
+      '📱 Step 4: 手机/Telegram（可跳过，附功能受限提醒）',
+      '⚠️ 跳过时显示警告，说明哪些功能将无法使用',
+      '✅ 可后期在 设置→个人资料 补填',
+    ],
+  },
   {
     version: '1.044',
     date: '2026-06-03',
