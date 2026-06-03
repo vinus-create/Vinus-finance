@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.030'
+export const APP_VERSION = '1.031'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.031',
+    date: '2026-06-03',
+    title: '账单缴付频率（每 1-12 个月）',
+    changes: [
+      '📅 账单支持每月/每2月/每3月/每4月/每6月/每年缴付',
+      '💰 实付金额 = 月均金额 × 频率（如月均 RM195.8 × 3 = RM587.40）',
+      '🃏 账单卡片显示实付金额 + 月均金额',
+      '💳 扣款按钮显示当次实付总额',
+      '⚠️ 需在 Supabase 执行：ALTER TABLE monthly_bills ADD COLUMN IF NOT EXISTS frequency_months INTEGER DEFAULT 1;',
+    ],
+  },
   {
     version: '1.030',
     date: '2026-06-03',

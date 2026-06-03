@@ -27,6 +27,7 @@ export interface MonthlyBill {
   name: string
   amount: number
   due_day: number
+  frequency_months: number
   expense_category: string | null
   emoji: string
   is_active: boolean
@@ -49,6 +50,7 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
   const [dueDay, setDueDay] = useState('1')
   const [emoji, setEmoji] = useState('💡')
   const [category, setCategory] = useState('electricity_tnb')
+  const [frequencyMonths, setFrequencyMonths] = useState(1)
   const [autoRemind, setAutoRemind] = useState(false)
   const [autoDeductAccount, setAutoDeductAccount] = useState('')
   const [notes, setNotes] = useState('')
@@ -72,11 +74,13 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         setDueDay(String(editing.due_day))
         setEmoji(editing.emoji)
         setCategory(editing.expense_category ?? 'other_expense')
+        setFrequencyMonths(editing.frequency_months ?? 1)
         setAutoRemind(editing.auto_remind)
         setAutoDeductAccount(editing.auto_deduct_account ?? '')
         setNotes(editing.notes ?? '')
       } else {
         setName(''); setAmount(''); setDueDay('1'); setEmoji('💡')
+        setFrequencyMonths(1)
         setCategory('electricity_tnb'); setAutoRemind(false); setAutoDeductAccount(''); setNotes('')
       }
     }
@@ -107,6 +111,7 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         due_day: day,
         expense_category: category,
         emoji,
+        frequency_months: frequencyMonths,
         auto_remind: autoRemind,
         auto_budget: false,
         auto_deduct_account: autoDeductAccount.trim() || null,
@@ -236,6 +241,40 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
                 className="h-11"
               />
             </div>
+          </div>
+
+          {/* Payment frequency */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">缴付频率</Label>
+            <div className="flex flex-wrap gap-2">
+              {[1,2,3,4,6,12].map(m => (
+                <button
+                  key={m}
+                  onClick={() => setFrequencyMonths(m)}
+                  className={`text-xs px-3 py-2 rounded-xl border font-medium transition-colors ${
+                    frequencyMonths === m
+                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                      : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  {m === 1 ? '每月' : m === 12 ? '每年' : `每 ${m} 个月`}
+                </button>
+              ))}
+            </div>
+            {/* Preview: actual payment per occurrence */}
+            {parseFloat(amount) > 0 && (
+              <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+                每次缴付：
+                <span className="font-semibold text-foreground">
+                  {frequencyMonths === 1
+                    ? `RM ${parseFloat(amount).toFixed(2)}`
+                    : `RM ${parseFloat(amount).toFixed(2)} × ${frequencyMonths} = RM ${(parseFloat(amount) * frequencyMonths).toFixed(2)}`}
+                </span>
+                {frequencyMonths > 1 && (
+                  <span className="ml-2 text-muted-foreground">（月均 RM {parseFloat(amount).toFixed(2)}）</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Notes */}

@@ -118,22 +118,30 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
   const isDue = daysLeft <= 3 && daysLeft >= 0
   const isOverdue = daysLeft < 0
   const [paying, setPaying] = useState(false)
+  const freq = bill.frequency_months ?? 1
+  const payAmount = Number(bill.amount) * freq
 
   async function handlePay() {
     if (!bill.auto_deduct_account) return
-    if (!confirm(`从「${bill.auto_deduct_account}」扣除 RM ${Number(bill.amount).toFixed(2)}？`)) return
+    const freq = bill.frequency_months ?? 1
+    const payAmount2 = Number(bill.amount) * freq
+    if (!confirm(`从「${bill.auto_deduct_account}」扣除 RM ${payAmount2.toFixed(2)}${freq > 1 ? ` (${freq}个月)` : ''}？`)) return
     setPaying(true)
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('未登录')
 
+      // Actual payment = monthly amount × frequency (e.g. quarterly = ×3)
+      const freq = bill.frequency_months ?? 1
+      const payAmount = Number(bill.amount) * freq
+
       // Record expense transaction
       const today = new Date().toISOString().slice(0, 10)
       const { error: txnErr } = await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'expense',
-        amount: Number(bill.amount),
+        amount: payAmount,
         currency: 'MYR',
         expense_category: bill.expense_category ?? 'other_expense',
         merchant_name: bill.name,
@@ -148,9 +156,9 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
       // Deduct from account balance
       const { data: acct } = await supabase.from('accounts').select('id, balance')
         .eq('user_id', user.id).eq('name', bill.auto_deduct_account).maybeSingle()
-      if (acct) await supabase.from('accounts').update({ balance: acct.balance - Number(bill.amount) }).eq('id', acct.id)
+      if (acct) await supabase.from('accounts').update({ balance: acct.balance - payAmount }).eq('id', acct.id)
 
-      toast.success(`已从 ${bill.auto_deduct_account} 扣除 RM ${Number(bill.amount).toFixed(2)}`)
+      toast.success(`已从 ${bill.auto_deduct_account} 扣除 RM ${payAmount.toFixed(2)}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '扣款失败')
     } finally {
@@ -166,7 +174,9 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">{bill.name}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">每月 {bill.due_day} 日</span>
+            <span className="text-xs text-muted-foreground">
+            {freq === 1 ? '每月' : freq === 12 ? '每年' : `每${freq}个月`} {bill.due_day} 日
+          </span>
             {isDue && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">⚡ {daysLeft === 0 ? '今天到期' : `${daysLeft} 天后`}</span>}
             {isOverdue && <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">已过</span>}
           </div>
@@ -179,7 +189,10 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
         </div>
 
         <div className="text-right shrink-0">
-          <p className="text-sm font-bold text-red-500">−RM {Number(bill.amount).toFixed(2)}</p>
+          <p className="text-sm font-bold text-red-500">−RM {payAmount.toFixed(2)}</p>
+        {freq > 1 && (
+          <p className="text-[10px] text-muted-foreground">月均 RM {Number(bill.amount).toFixed(2)}</p>
+        )}
           <div className="flex gap-1.5 mt-2 justify-end">
             <button onClick={() => onEdit(bill)} className="text-xs px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/70 transition-colors">
               编辑
@@ -202,7 +215,7 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
           disabled={paying}
           className="w-full py-2.5 text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.99] transition-all"
         >
-          {paying ? '扣款中...' : `💳 从 ${bill.auto_deduct_account} 扣款`}
+          {paying ? '扣款中...' : `💳 从 ${bill.auto_deduct_account} 扣款 RM ${payAmount.toFixed(2)}`}
         </button>
       )}
     </div>

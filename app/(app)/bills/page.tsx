@@ -15,6 +15,7 @@ export default async function BillsPage() {
     .eq('is_active', true)
     .order('due_day', { ascending: true })
 
+  // Monthly equivalent (divide by frequency for bills paid less often than monthly)
   const totalMonthly = (bills ?? []).reduce((s, b) => s + Number(b.amount), 0)
 
   return (
