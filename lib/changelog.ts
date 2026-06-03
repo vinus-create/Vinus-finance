@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.042'
+export const APP_VERSION = '1.043'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.043',
+    date: '2026-06-03',
+    title: '存钱目标：编辑功能',
+    changes: [
+      '✏️ 存钱目标卡片新增编辑按钮，可修改名称/表情/颜色/金额/日期',
+    ],
+  },
   {
     version: '1.042',
     date: '2026-06-03',

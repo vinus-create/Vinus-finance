@@ -53,12 +53,13 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
   const { t } = useLang()
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
+  const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null)
   const [depositGoal, setDepositGoal] = useState<SavingsGoal | null>(null)
   const [depositAmount, setDepositAmount] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Add form state
+  // Shared form state (used by both Add and Edit)
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🎯')
   const [color, setColor] = useState('#10b981')
@@ -70,6 +71,35 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
     setName(''); setEmoji('🎯'); setColor('#10b981')
     setTargetAmount(''); setCurrentAmount('0'); setTargetDate('')
     setError(null)
+  }
+
+  function openEdit(goal: SavingsGoal) {
+    setName(goal.name)
+    setEmoji(goal.emoji)
+    setColor(goal.color)
+    setTargetAmount(String(goal.target_amount))
+    setCurrentAmount(String(goal.current_amount))
+    setTargetDate(goal.target_date ?? '')
+    setError(null)
+    setEditGoal(goal)
+  }
+
+  async function handleEdit() {
+    if (!editGoal || !name.trim() || !targetAmount) { setError(t.form_err_goal); return }
+    setSaving(true); setError(null)
+    try {
+      const supabase = createClient()
+      await supabase.from('savings_goals').update({
+        name: name.trim(), emoji, color,
+        target_amount: parseFloat(targetAmount),
+        current_amount: parseFloat(currentAmount) || 0,
+        target_date: targetDate || null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', editGoal.id)
+      setEditGoal(null); resetForm(); router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.err_unknown)
+    } finally { setSaving(false) }
   }
 
   async function handleAdd() {
@@ -155,7 +185,14 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
               ) : null}
             </div>
           </div>
-          <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-red-500 text-lg leading-none px-1 shrink-0">×</button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => openEdit(goal)}
+              className="text-xs text-muted-foreground hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-muted transition-colors">
+              编辑
+            </button>
+            <button onClick={() => handleDelete(goal.id)}
+              className="text-muted-foreground hover:text-red-500 text-lg leading-none px-1">×</button>
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -295,6 +332,60 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
             {error && <p className="text-xs text-red-500">{error}</p>}
             <Button onClick={handleAdd} disabled={saving} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white h-11">
               {saving ? t.loading : t.form_save_goal}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Sheet */}
+      <Sheet open={!!editGoal} onOpenChange={v => { if (!v) { setEditGoal(null); resetForm() } }}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-safe">
+          <SheetHeader className="mb-4"><SheetTitle>✏️ 编辑目标</SheetTitle></SheetHeader>
+          <div className="space-y-4 px-1 pb-6">
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">{t.form_goal_emoji}</p>
+              <div className="flex flex-wrap gap-2">
+                {EMOJIS.map(e => (
+                  <button key={e} onClick={() => setEmoji(e)}
+                    className={cn('text-2xl w-10 h-10 rounded-xl border transition-colors', emoji === e ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'border-border')}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">颜色</p>
+              <div className="flex gap-2">
+                {COLORS.map(c => (
+                  <button key={c} onClick={() => setColor(c)}
+                    className={cn('w-7 h-7 rounded-full border-2 transition-transform', color === c ? 'border-foreground scale-110' : 'border-transparent')}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.form_goal_name}</p>
+                <Input value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.form_goal_target}</p>
+                  <Input type="number" min="0" step="0.01" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t.form_goal_current}</p>
+                  <Input type="number" min="0" step="0.01" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.form_goal_date}</p>
+                <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
+              </div>
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <Button onClick={handleEdit} disabled={saving} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white h-11">
+              {saving ? t.loading : '💾 保存更改'}
             </Button>
           </div>
         </SheetContent>
