@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import BalanceSummaryCard from '@/components/dashboard/BalanceSummaryCard'
 import SpendingBreakdown from '@/components/dashboard/SpendingBreakdown'
+import DashboardWidgets from '@/components/dashboard/DashboardWidgets'
 import MonthNav from '@/components/transactions/MonthNav'
 import { Bell } from 'lucide-react'
 import Link from 'next/link'
@@ -94,6 +95,26 @@ export default async function DashboardPage({ searchParams }: Props) {
     .map(([category, amount]) => ({ category: category as ExpenseCategory, amount }))
 
   const recent = txns?.slice(0, 5) ?? []
+
+  // ── Widget data (parallel fetch) ──────────────────────────
+  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
+  const next7Days = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  const [billsRes, loansRes, budgetsRes, remindersRes] = await Promise.all([
+    supabase.from('monthly_bills').select('amount, frequency_months').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('loans').select('monthly_payment').eq('user_id', user.id).eq('is_active', true).gt('outstanding_balance', 0),
+    supabase.from('budgets').select('budget_amount').eq('user_id', user.id).eq('period_year', year).eq('period_month', month),
+    isCurrentMonth
+      ? supabase.from('reminders').select('id, title, amount, due_date').eq('user_id', user.id).eq('status', 'active')
+          .gte('due_date', todayStr).lte('due_date', next7Days).order('due_date').limit(5)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const totalBills = (billsRes.data ?? []).reduce((s, b) => s + Number(b.amount), 0)
+  const totalLoans = (loansRes.data ?? []).reduce((s, l) => s + Number(l.monthly_payment), 0)
+  const totalBudget = (budgetsRes.data ?? []).reduce((s, b) => s + Number(b.budget_amount), 0)
+  const upcomingReminders = (remindersRes.data ?? []) as Array<{ id: string; title: string; amount: number | null; due_date: string }>
 
   return (
     <div>
@@ -203,6 +224,16 @@ export default async function DashboardPage({ searchParams }: Props) {
           </div>
         </section>
       )}
+
+      {/* Dashboard Widgets (customizable) */}
+      <DashboardWidgets data={{
+        totalBills,
+        totalLoans,
+        totalBudget,
+        budgetSpent: totalExpense,
+        reminders: upcomingReminders,
+        userId: user.id,
+      }} />
 
       {/* Top spending categories */}
       <SpendingBreakdown items={topCategories} total={totalExpense} />

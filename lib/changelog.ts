@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.033'
+export const APP_VERSION = '1.034'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.034',
+    date: '2026-06-03',
+    title: 'Dashboard 可自定义 Widget',
+    changes: [
+      '⚙️ Dashboard 新增「财务概览」区域，5 个可开关 Widget',
+      '🧾 Widget 1：每月固定支出（账单 + 贷款月供汇总）',
+      '📊 Widget 2：月度预算进度条',
+      '📈 Widget 3：总预计支出 = 固定 + 预算范围（RM 5000 ～ RM 7000）',
+      '🔔 Widget 4：未来 7 天到期提醒',
+      '🤖 Widget 5：AI 每日理财建议（Gemini Flash，1 小时缓存）',
+      '🔧 点「⚙️ 自定义」可开关每个 Widget，设定保存在 localStorage',
+    ],
+  },
   {
     version: '1.033',
     date: '2026-06-03',
