@@ -70,19 +70,37 @@ export async function GET(request: NextRequest) {
       return text
     }
 
+    // Random famous investor to prevent repetitive responses
+    const FAMOUS_INVESTORS = [
+      { name: '沃伦·巴菲特', en: 'Warren Buffett', style: '价值投资，长期持有，避免负债' },
+      { name: '查理·芒格', en: 'Charlie Munger', style: '心理模型，逆向思维，避免愚蠢行为' },
+      { name: '彼得·林奇', en: 'Peter Lynch', style: '了解你所投资的，消费行为即投资信号' },
+      { name: '瑞·达利欧', en: 'Ray Dalio', style: '原则，风险平衡，债务周期' },
+      { name: '罗伯特·清崎', en: 'Robert Kiyosaki', style: '资产与负债，被动收入，财商教育' },
+      { name: '本杰明·格雷厄姆', en: 'Benjamin Graham', style: '安全边际，内在价值，市场情绪' },
+      { name: '约翰·博格', en: 'John Bogle', style: '低成本指数基金，长期复利，避免择时' },
+      { name: '乔治·索罗斯', en: 'George Soros', style: '反身性理论，市场预期，风险管理' },
+    ]
+    const investor = FAMOUS_INVESTORS[Math.floor(Math.random() * FAMOUS_INVESTORS.length)]!
+
     const model = getFlashModel()
     const result = await model.generateContent(
-      `你是马来西亚个人理财助手 Vinus Finance。你的回复必须严格遵守以下格式，不得省略任何部分：
+      `你是马来西亚个人理财助手 Vinus Finance。
 
-💡 [针对用户财务状况的具体建议，30-50字]
+今日特邀投资大师：${investor.name}（${investor.en}）
+其投资哲学：${investor.style}
 
-📖 "[世界著名投资家/企业家的理财名言原文]" —— [人名（如巴菲特、芒格、彼得·林奇、瑞·达利欧、罗伯特·清崎、比尔·盖茨等）]
-→ [一句话说明该名言与用户当前状况的关联，20-30字]
+请严格按以下格式回复（必须包含全部两个部分）：
 
-重要规则：
-- 必须包含 💡 个人建议 和 📖 名言 两个部分，缺一不可
-- 名言必须是真实存在的名言，不可虚构
-- 直接输出内容，不要 JSON，不要代码块，不要额外解释
+💡 [针对用户财务数据的具体建议，30-50字，结合用户实际数字]
+
+📖 "[${investor.name}的一句真实名言，中文]" —— ${investor.name}
+→ [一句话说明这句话与用户当前处境的直接关联，20-30字]
+
+规则：
+- 名言必须是${investor.name}真实说过的，不可虚构
+- 💡 和 📖 两部分缺一不可
+- 直接输出，不要 JSON，不要代码块
 
 用户财务数据：
 ${context}`
