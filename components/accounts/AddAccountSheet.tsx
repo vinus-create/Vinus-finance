@@ -90,7 +90,7 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
         name: form.name.trim(),
         account_type: form.account_type,
         institution: form.institution.trim() || null,
-        account_number: form.account_number.trim().slice(-4) || null,
+        account_number: form.account_number.trim() || null,
         balance,
         currency: 'MYR',
         include_in_net_worth: form.include_in_net_worth,
@@ -209,11 +209,9 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
               <Label className="text-xs">{t.form_account_number}</Label>
               <Input
                 type="text"
-                inputMode="numeric"
-                maxLength={4}
-                placeholder="1234"
+                placeholder="e.g. 1234567890"
                 value={form.account_number}
-                onChange={e => set('account_number', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onChange={e => set('account_number', e.target.value)}
                 className="h-10"
               />
             </div>
