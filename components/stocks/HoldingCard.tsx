@@ -8,6 +8,87 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { StockHolding } from '@/lib/types/app.types'
 import type { PriceData } from './StocksClient'
 
+// ─── EPF Annual Dividend Helper ───────────────────────────────
+
+function EpfDividendButton({ holding }: { holding: StockHolding }) {
+  const router = useRouter()
+  const [showInput, setShowInput] = useState(false)
+  const [rate, setRate] = useState('5.50')
+  const [applying, setApplying] = useState(false)
+
+  async function applyDividend() {
+    const r = parseFloat(rate)
+    if (!r || r <= 0 || r > 20) { toast.error('红利率需在 0–20% 之间'); return }
+    setApplying(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('未登录')
+      const dividendAmt = parseFloat((holding.shares * r / 100).toFixed(2))
+      const today = new Date().toISOString().slice(0, 10)
+
+      // Update EPF balance
+      await supabase.from('stock_holdings').update({
+        shares: holding.shares + dividendAmt,
+        updated_at: new Date().toISOString(),
+      }).eq('id', holding.id)
+
+      // Record dividend as income transaction
+      await supabase.from('transactions').insert({
+        user_id: user.id, type: 'income', amount: dividendAmt, currency: 'MYR',
+        income_category: 'dividend',
+        merchant_name: 'KWSP/EPF',
+        description: `EPF 年度红利 ${r}% (${new Date().getFullYear()})`,
+        account_name: 'EPF (KWSP)', transaction_date: today,
+        ledger: 'personal', is_tax_deductible: false,
+      })
+
+      toast.success(`EPF 红利 RM ${dividendAmt.toFixed(2)} 已记录`)
+      setShowInput(false)
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '失败')
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  if (!showInput) {
+    return (
+      <button
+        onClick={() => setShowInput(true)}
+        className="w-full text-xs py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
+      >
+        🎁 申请年度红利
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex gap-2 items-center">
+      <span className="text-xs text-muted-foreground shrink-0">红利率 %</span>
+      <input
+        type="number"
+        step="0.01"
+        value={rate}
+        onChange={e => setRate(e.target.value)}
+        className="h-8 flex-1 text-sm border border-border rounded-lg px-2 bg-background"
+        placeholder="5.50"
+        autoFocus
+      />
+      <span className="text-xs text-muted-foreground shrink-0">
+        = RM {(holding.shares * (parseFloat(rate) || 0) / 100).toFixed(2)}
+      </span>
+      <button onClick={applyDividend} disabled={applying}
+        className="text-xs px-3 py-1.5 rounded-lg bg-blue-500 text-white shrink-0">
+        {applying ? '...' : '确认'}
+      </button>
+      <button onClick={() => setShowInput(false)}
+        className="text-xs px-2 py-1.5 rounded-lg border border-border shrink-0">✕</button>
+    </div>
+  )
+}
+
 interface Props {
   holding: StockHolding
   priceData: PriceData | null
@@ -100,8 +181,12 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <p className="text-[10px] text-muted-foreground">{assetMeta.unitLabel}</p>
-          <p className="text-xs font-semibold">{holding.shares}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {holding.ticker === 'KWSP-EPF' ? '累积 (RM)' : assetMeta.unitLabel}
+          </p>
+          <p className="text-xs font-semibold">
+            {holding.ticker === 'KWSP-EPF' ? `RM ${Number(holding.shares).toFixed(2)}` : holding.shares}
+          </p>
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground">{t.stocks_avg_cost}</p>
@@ -125,6 +210,13 @@ export default function HoldingCard({ holding, priceData, onEdit }: Props) {
           ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(2)}%)
         </p>
       </div>
+
+      {/* EPF Annual Dividend button — only for KWSP-EPF */}
+      {holding.ticker === 'KWSP-EPF' && (
+        <div className="mb-2">
+          <EpfDividendButton holding={holding} />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-2">

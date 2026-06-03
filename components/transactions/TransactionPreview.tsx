@@ -14,6 +14,7 @@ import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import type { LangCode } from '@/lib/i18n'
 import SuccessCelebration from '@/components/ui/SuccessCelebration'
 import type { DetectedAccount } from './PDFParser'
+import { calcEpfSocso } from '@/lib/utils/epf-socso'
 
 interface Props {
   transactions: ParsedTransaction[]
@@ -52,6 +53,9 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
   const [globalLedger, setGlobalLedger] = useState<LedgerType>(() =>
     transactions.some(tx => tx.ledger === 'business') ? 'business' : 'personal'
   )
+  // EPF / SOCSO auto-deduction
+  const [autoEpf, setAutoEpf] = useState(false)
+  const [autoSocso, setAutoSocso] = useState(false)
   const { t, lang } = useLang()
 
   // ── Load user accounts ────────────────────────────────────
@@ -182,6 +186,69 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
         if (acct) await supabase.from('accounts').update({ balance: acct.balance + delta }).eq('id', acct.id)
       }
 
+      // ── EPF / SOCSO auto-deduction ────────────────────────────
+      const incomeRows = rows.filter(r => r.type === 'income')
+      if (globalLedger === 'personal' && incomeRows.length > 0 && (autoEpf || autoSocso)) {
+        for (const row of incomeRows) {
+          const epf = calcEpfSocso(row.amount)
+          const today = row.transaction_date
+
+          if (autoSocso) {
+            // Record SOCSO + EIS as expense transactions
+            await supabase.from('transactions').insert([
+              {
+                user_id: user.id, type: 'expense', amount: epf.socsoEmployee,
+                currency: 'MYR', expense_category: 'socso_perkeso',
+                merchant_name: 'PERKESO/SOCSO', description: `SOCSO - ${row.merchant_name ?? '月薪'}`,
+                account_name: row.account_name, transaction_date: today,
+                ledger: 'personal', is_tax_deductible: false,
+              },
+              {
+                user_id: user.id, type: 'expense', amount: epf.eisEmployee,
+                currency: 'MYR', expense_category: 'socso_perkeso',
+                merchant_name: 'EIS/PERKESO', description: `EIS - ${row.merchant_name ?? '月薪'}`,
+                account_name: row.account_name, transaction_date: today,
+                ledger: 'personal', is_tax_deductible: false,
+              },
+            ])
+          }
+
+          if (autoEpf) {
+            // Upsert KWSP-EPF in stock_holdings (accumulate balance)
+            const { data: existing } = await supabase.from('stock_holdings')
+              .select('id, shares').eq('user_id', user.id).eq('ticker', 'KWSP-EPF').maybeSingle()
+
+            if (existing) {
+              await supabase.from('stock_holdings').update({
+                shares: existing.shares + epf.epfEmployee,
+                updated_at: new Date().toISOString(),
+              }).eq('id', existing.id)
+            } else {
+              await supabase.from('stock_holdings').insert({
+                user_id: user.id,
+                ticker: 'KWSP-EPF',
+                company_name: 'Kumpulan Wang Simpanan Pekerja (EPF)',
+                asset_type: 'mutual_fund',
+                shares: epf.epfEmployee,
+                avg_cost_price: 1.00,
+                currency: 'MYR',
+                notes: 'Auto-tracked EPF contributions',
+                is_active: true,
+              })
+            }
+
+            // Record EPF as expense (deduction from account)
+            await supabase.from('transactions').insert({
+              user_id: user.id, type: 'expense', amount: epf.epfEmployee,
+              currency: 'MYR', expense_category: 'epf_kwsp',
+              merchant_name: 'KWSP/EPF', description: `EPF 11% - ${row.merchant_name ?? '月薪'}`,
+              account_name: row.account_name, transaction_date: today,
+              ledger: 'personal', is_tax_deductible: false,
+            })
+          }
+        }
+      }
+
       setShowCelebration(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.preview_error_save)
@@ -245,6 +312,74 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
       <p className="text-xs text-muted-foreground">
         {valid.length} {t.preview_detected}
       </p>
+
+      {/* EPF / SOCSO panel — only for personal income */}
+      {globalLedger === 'personal' && valid.some(txn => txn.type === 'income') && (() => {
+        const totalIncome = valid.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+        const epf = calcEpfSocso(totalIncome)
+        return (
+          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 space-y-3">
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">🏦 EPF / SOCSO / EIS 自动计算</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">月薪（税前）</span>
+                  <span className="font-medium">RM {epf.grossWage.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">EPF 雇员 (11%)</span>
+                  <span className="font-medium text-blue-600">−RM {epf.epfEmployee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">SOCSO 雇员 (0.5%)</span>
+                  <span className="font-medium text-blue-600">−RM {epf.socsoEmployee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">EIS 雇员 (0.2%)</span>
+                  <span className="font-medium text-blue-600">−RM {epf.eisEmployee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t border-blue-200 pt-1.5">
+                  <span className="font-semibold">到手工资</span>
+                  <span className="font-bold text-emerald-600">RM {epf.netTakehome.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>雇主 EPF (13%)</span>
+                  <span>+RM {epf.epfEmployer.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>EPF 总计</span>
+                  <span>RM {(epf.epfEmployee + epf.epfEmployer).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+            {/* Toggles */}
+            <div className="space-y-2 border-t border-blue-200 pt-2">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <p className="text-xs font-medium">📈 自动添加 EPF 至投资组合</p>
+                  <p className="text-[10px] text-muted-foreground">RM {epf.epfEmployee} 记入 KWSP-EPF 持仓</p>
+                </div>
+                <button onClick={() => setAutoEpf(v => !v)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${autoEpf ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${autoEpf ? 'translate-x-5' : ''}`} />
+                </button>
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <p className="text-xs font-medium">🛡️ 自动记录 SOCSO + EIS 扣款</p>
+                  <p className="text-[10px] text-muted-foreground">共扣 RM {(epf.socsoEmployee + epf.eisEmployee).toFixed(2)}</p>
+                </div>
+                <button onClick={() => setAutoSocso(v => !v)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${autoSocso ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${autoSocso ? 'translate-x-5' : ''}`} />
+                </button>
+              </label>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Transaction cards */}
       <div className="space-y-2 max-h-[50dvh] overflow-y-auto pr-0.5">

@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.037'
+export const APP_VERSION = '1.038'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.038',
+    date: '2026-06-03',
+    title: 'EPF / SOCSO / EIS 自动计算',
+    changes: [
+      '🏦 个人收入确认时自动计算 EPF 11%、SOCSO 0.5%、EIS 0.2%',
+      '📊 显示税前工资、各扣款明细、到手工资',
+      '📈 开关：自动将 EPF 雇员部分累积至投资组合（KWSP-EPF 持仓）',
+      '🛡️ 开关：自动记录 SOCSO + EIS 扣款为支出交易',
+      '🎁 投资组合中 KWSP-EPF 持仓新增「申请年度红利」按钮，输入红利率自动计算并记录收入',
+    ],
+  },
   {
     version: '1.037',
     date: '2026-06-03',
