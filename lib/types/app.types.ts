@@ -3,11 +3,12 @@
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
 export type ExpenseCategory =
-  | 'mamak'
   | 'restaurant'
   | 'grocery'
   | 'grab_food'
   | 'coffee'
+  | 'household'
+  | 'furniture'
   | 'tol'
   | 'grab_transport'
   | 'petrol'

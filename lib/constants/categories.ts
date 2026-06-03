@@ -9,11 +9,10 @@ export interface CategoryMeta {
 
 export const EXPENSE_CATEGORIES: CategoryMeta[] = [
   // Food & Drink
-  { value: 'mamak', label: 'Mamak', icon: '🍜', group: 'Makan & Minum' },
-  { value: 'restaurant', label: 'Restaurant', icon: '🍽️', group: 'Makan & Minum' },
+  { value: 'restaurant', label: 'Makan', icon: '🍽️', group: 'Makan & Minum' },
   { value: 'grocery', label: 'Barang Dapur', icon: '🛒', group: 'Makan & Minum' },
   { value: 'grab_food', label: 'GrabFood / Delivery', icon: '🛵', group: 'Makan & Minum' },
-  { value: 'coffee', label: 'Kopi & Minuman', icon: '☕', group: 'Makan & Minum' },
+  { value: 'coffee', label: 'Minum', icon: '☕', group: 'Makan & Minum' },
   // Transport
   { value: 'tol', label: 'Tol', icon: '🛣️', group: 'Pengangkutan' },
   { value: 'grab_transport', label: 'Grab / e-Hailing', icon: '🚗', group: 'Pengangkutan' },
@@ -32,10 +31,11 @@ export const EXPENSE_CATEGORIES: CategoryMeta[] = [
   { value: 'insurance', label: 'Insurans / Takaful', icon: '🔒', group: 'Bil & Utiliti' },
   { value: 'rent_mortgage', label: 'Sewa / Mortgage', icon: '🏠', group: 'Bil & Utiliti' },
   // Shopping
-  { value: 'shopee', label: 'Shopee', icon: '🛍️', group: 'Membeli-belah' },
-  { value: 'lazada', label: 'Lazada', icon: '📦', group: 'Membeli-belah' },
+  { value: 'shopee', label: 'Online Shopping', icon: '🛍️', group: 'Membeli-belah' },
   { value: 'clothing', label: 'Pakaian', icon: '👗', group: 'Membeli-belah' },
   { value: 'electronics', label: 'Elektronik', icon: '💻', group: 'Membeli-belah' },
+  { value: 'household', label: 'Keperluan Rumah', icon: '🏡', group: 'Membeli-belah' },
+  { value: 'furniture', label: 'Perabot', icon: '🛋️', group: 'Membeli-belah' },
   // Health
   { value: 'medical', label: 'Perubatan / Klinik', icon: '🏥', group: 'Kesihatan' },
   { value: 'pharmacy', label: 'Farmasi', icon: '💊', group: 'Kesihatan' },

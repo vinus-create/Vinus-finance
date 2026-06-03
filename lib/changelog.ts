@@ -5,9 +5,22 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.027'
+export const APP_VERSION = '1.028'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.028',
+    date: '2026-06-03',
+    title: '类别调整',
+    changes: [
+      '🗑️ 删除「马来餐厅」类别（旧交易保留历史显示）',
+      '🍽️ 「餐厅」→「吃」',
+      '☕ 「咖啡饮料」→「喝」',
+      '🛍️ Shopee + Lazada 合并为「网购」（Lazada 保留为历史别名）',
+      '🏡 新增「家用」类别',
+      '🛋️ 新增「家具」类别',
+    ],
+  },
   {
     version: '1.027',
     date: '2026-06-03',

@@ -2,11 +2,11 @@ import type { LangCode } from '@/lib/i18n'
 
 // ─── Expense category labels ──────────────────────────────────
 const EXPENSE_LABEL: Record<string, Record<LangCode, string>> = {
-  mamak:             { en: 'Mamak',                    ms: 'Mamak',                    zh: '马来餐厅' },
-  restaurant:        { en: 'Restaurant',               ms: 'Restaurant',               zh: '餐厅' },
+  mamak:             { en: 'Mamak',                    ms: 'Mamak',                    zh: '马来餐厅' },  // legacy — kept for old transactions
+  restaurant:        { en: 'Eat',                      ms: 'Makan',                    zh: '吃' },
   grocery:           { en: 'Grocery',                  ms: 'Barang Dapur',             zh: '超市/杂货' },
   grab_food:         { en: 'GrabFood / Delivery',      ms: 'GrabFood / Delivery',      zh: '外卖/送餐' },
-  coffee:            { en: 'Coffee & Drinks',           ms: 'Kopi & Minuman',           zh: '咖啡饮料' },
+  coffee:            { en: 'Drink',                    ms: 'Minum',                    zh: '喝' },
   tol:               { en: 'Toll',                     ms: 'Tol',                      zh: '过路费' },
   grab_transport:    { en: 'Grab / e-Hailing',         ms: 'Grab / e-Hailing',         zh: '网约车' },
   petrol:            { en: 'Petrol',                   ms: 'Petrol',                   zh: '汽油' },
@@ -21,10 +21,12 @@ const EXPENSE_LABEL: Record<string, Record<LangCode, string>> = {
   internet_telco:    { en: 'Internet / Telco',         ms: 'Internet / Telco',         zh: '网络/电话' },
   insurance:         { en: 'Insurance / Takaful',      ms: 'Insurans / Takaful',       zh: '保险/回教保险' },
   rent_mortgage:     { en: 'Rent / Mortgage',          ms: 'Sewa / Mortgage',          zh: '租金/房贷' },
-  shopee:            { en: 'Shopee',                   ms: 'Shopee',                   zh: 'Shopee' },
-  lazada:            { en: 'Lazada',                   ms: 'Lazada',                   zh: 'Lazada' },
+  shopee:            { en: 'Online Shopping',           ms: 'Beli Online',              zh: '网购' },
+  lazada:            { en: 'Online Shopping',           ms: 'Beli Online',              zh: '网购' },  // legacy alias
   clothing:          { en: 'Clothing',                 ms: 'Pakaian',                  zh: '服装' },
   electronics:       { en: 'Electronics',              ms: 'Elektronik',               zh: '电子产品' },
+  household:         { en: 'Household',                ms: 'Keperluan Rumah',          zh: '家用' },
+  furniture:         { en: 'Furniture',                ms: 'Perabot',                  zh: '家具' },
   medical:           { en: 'Medical / Clinic',         ms: 'Perubatan / Klinik',       zh: '医疗/诊所' },
   pharmacy:          { en: 'Pharmacy',                 ms: 'Farmasi',                  zh: '药房' },
   gym:               { en: 'Gym / Sports',             ms: 'Gym / Sukan',              zh: '健身/运动' },
