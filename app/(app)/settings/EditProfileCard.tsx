@@ -156,7 +156,7 @@ export default function EditProfileCard({ initialName, initialPhone, initialTele
               <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
                 <span className="text-2xl">🤖</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">已绑定 @VinusFinanceBot</p>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">已绑定 @VinusFinance_Bot</p>
                   <p className="text-[10px] text-muted-foreground">发送收据/文字/语音到 Telegram 自动记账</p>
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function EditProfileCard({ initialName, initialPhone, initialTele
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" size="sm" className="text-xs h-8"
-                      onClick={() => window.open('https://t.me/VinusFinanceBot', '_blank')}>
+                      onClick={() => window.open('https://t.me/VinusFinance_Bot', '_blank')}>
                       重新打开 Telegram
                     </Button>
                     <Button size="sm" className="text-xs h-8 bg-emerald-500 text-white hover:bg-emerald-600"

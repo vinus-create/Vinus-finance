@@ -350,7 +350,7 @@ export default function OnboardingPage() {
                   className="h-12 text-base font-mono"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  发送 /start 给 <strong>@VinusFinanceBot</strong> 获取你的 Telegram ID
+                  发送 /start 给 <strong>@VinusFinance_Bot</strong> 获取你的 Telegram ID
                 </p>
               </div>
 

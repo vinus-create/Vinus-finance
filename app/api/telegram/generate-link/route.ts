@@ -22,7 +22,7 @@ export async function POST() {
     return NextResponse.json({ error: error?.message ?? 'Failed to create token' }, { status: 500 })
   }
 
-  const botUsername = process.env.TELEGRAM_BOT_USERNAME ?? 'VinusFinanceBot'
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME ?? 'VinusFinance_Bot'
   const deepLink = `https://t.me/${botUsername}?start=${data.token}`
 
   return NextResponse.json({ token: data.token, deepLink })
