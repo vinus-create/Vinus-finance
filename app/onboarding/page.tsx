@@ -46,7 +46,7 @@ const STEP_INFO: StepInfo[] = [
     emoji: '📱',
     title: '联系方式',
     subtitle: '方便接收提醒（选填）',
-    features: ['🤖 WhatsApp 财务机器人', '📬 Telegram 消费提醒', '🔔 账单到期推送通知'],
+    features: ['🤖 Telegram 财务机器人', '📬 Telegram 消费提醒', '🔔 账单到期推送通知'],
   },
 ]
 
@@ -322,7 +322,7 @@ export default function OnboardingPage() {
                   inputMode="tel"
                   className="h-12 text-base font-mono"
                 />
-                <p className="text-xs text-muted-foreground mt-1">用于 WhatsApp 财务机器人</p>
+                <p className="text-xs text-muted-foreground mt-1">用于账单到期推送通知</p>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -346,7 +346,7 @@ export default function OnboardingPage() {
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 space-y-2">
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">⚠️ 跳过后部分功能受限</p>
                   <p className="text-xs text-amber-700 dark:text-amber-500">
-                    没有个人信息，以下功能将无法使用：财运分析、个人财务评估、PCB精确计算、WhatsApp/Telegram通知。
+                    没有个人信息，以下功能将无法使用：财运分析、个人财务评估、PCB精确计算、Telegram通知。
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-500">
                     你可以随时在 <strong>设置 → 个人资料</strong> 补填信息。
