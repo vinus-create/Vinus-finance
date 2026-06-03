@@ -109,12 +109,32 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
       }).eq('id', loan.id)
       if (loanErr) throw new Error(loanErr.message)
 
-      // 3. Mark linked reminders done (if any)
-      await supabase.from('reminders')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .eq('linked_loan_id', loan.id)
+      // 3. Advance recurring reminders to next period
+      // Match by linked_loan_id OR by title containing the loan name
+      const { data: linkedReminders } = await supabase
+        .from('reminders')
+        .select('id, due_date, frequency')
+        .eq('user_id', user.id)
         .eq('status', 'active')
-        .lte('due_date', date)
+        .or(`linked_loan_id.eq.${loan.id},title.ilike.%${loan.name.replace(/'/g, "''")}%`)
+
+      for (const reminder of linkedReminders ?? []) {
+        if (reminder.frequency === 'monthly' || reminder.frequency === 'weekly' || reminder.frequency === 'yearly') {
+          // Recurring: advance to next period instead of completing
+          const monthsToAdd = reminder.frequency === 'monthly' ? 1 : reminder.frequency === 'yearly' ? 12 : 0
+          const nextDue = monthsToAdd > 0
+            ? advanceMonths(reminder.due_date, monthsToAdd)
+            : reminder.due_date  // weekly handled separately if needed
+          await supabase.from('reminders')
+            .update({ due_date: nextDue, updated_at: new Date().toISOString() })
+            .eq('id', reminder.id)
+        } else {
+          // One-time reminder: mark as completed
+          await supabase.from('reminders')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('id', reminder.id)
+        }
+      }
 
       toast.success(`${loan.name} — ${t.loan_pay_title}`)
       onOpenChange(false)

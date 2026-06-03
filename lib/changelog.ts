@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.026'
+export const APP_VERSION = '1.027'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.027',
+    date: '2026-06-03',
+    title: '还款后自动推进账单提醒',
+    changes: [
+      '🔔 点击「还款」后，对应账单提醒自动推进到下一期（不再标记为已完成）',
+      '🔍 匹配提醒方式：linked_loan_id 或标题含贷款名称（兼容手动创建的提醒）',
+      '📅 每月提醒 → 下次日期 +1 个月；每年提醒 → +12 个月；一次性提醒 → 标记完成',
+    ],
+  },
   {
     version: '1.026',
     date: '2026-06-03',
