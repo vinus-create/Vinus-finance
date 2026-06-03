@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.036'
+export const APP_VERSION = '1.037'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.037',
+    date: '2026-06-03',
+    title: 'AI 消费分析 — 小票图片分析',
+    changes: [
+      '📸 AI 消费分析页面新增「小票分析」tab',
+      '🖼️ 上传收据照片 → Gemini Vision 分析商家、金额、商品明细',
+      '💬 AI 点评消费是否合理，马来西亚风格',
+      '📤 分析结果可分享或复制',
+    ],
+  },
   {
     version: '1.036',
     date: '2026-06-03',
