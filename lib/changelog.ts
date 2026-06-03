@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.029'
+export const APP_VERSION = '1.030'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.030',
+    date: '2026-06-03',
+    title: '每月账单自动扣户口',
+    changes: [
+      '💳 账单表单新增「自动扣户口」选择器，可选现有户口',
+      '🟢 账单卡片底部出现「从 XX 扣款」按钮',
+      '💰 点击扣款 → 自动记录支出交易 + 扣除户口余额',
+      '⚠️ 需在 Supabase 执行：ALTER TABLE monthly_bills ADD COLUMN IF NOT EXISTS auto_deduct_account TEXT;',
+    ],
+  },
   {
     version: '1.029',
     date: '2026-06-03',

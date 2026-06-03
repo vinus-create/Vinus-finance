@@ -117,42 +117,94 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
   const daysLeft = bill.due_day - today
   const isDue = daysLeft <= 3 && daysLeft >= 0
   const isOverdue = daysLeft < 0
+  const [paying, setPaying] = useState(false)
+
+  async function handlePay() {
+    if (!bill.auto_deduct_account) return
+    if (!confirm(`从「${bill.auto_deduct_account}」扣除 RM ${Number(bill.amount).toFixed(2)}？`)) return
+    setPaying(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('未登录')
+
+      // Record expense transaction
+      const today = new Date().toISOString().slice(0, 10)
+      const { error: txnErr } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'expense',
+        amount: Number(bill.amount),
+        currency: 'MYR',
+        expense_category: bill.expense_category ?? 'other_expense',
+        merchant_name: bill.name,
+        description: bill.name,
+        account_name: bill.auto_deduct_account,
+        transaction_date: today,
+        ledger: 'personal',
+        is_tax_deductible: false,
+      })
+      if (txnErr) throw new Error(txnErr.message)
+
+      // Deduct from account balance
+      const { data: acct } = await supabase.from('accounts').select('id, balance')
+        .eq('user_id', user.id).eq('name', bill.auto_deduct_account).maybeSingle()
+      if (acct) await supabase.from('accounts').update({ balance: acct.balance - Number(bill.amount) }).eq('id', acct.id)
+
+      toast.success(`已从 ${bill.auto_deduct_account} 扣除 RM ${Number(bill.amount).toFixed(2)}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '扣款失败')
+    } finally {
+      setPaying(false)
+    }
+  }
 
   return (
-    <div className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border">
-      <span className="text-2xl shrink-0">{bill.emoji}</span>
+    <div className="rounded-2xl bg-card border border-border overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        <span className="text-2xl shrink-0">{bill.emoji}</span>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate">{bill.name}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-muted-foreground">每月 {bill.due_day} 日</span>
-          {isDue && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">⚡ {daysLeft === 0 ? '今天到期' : `${daysLeft} 天后`}</span>}
-          {isOverdue && <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">已过</span>}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate">{bill.name}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-muted-foreground">每月 {bill.due_day} 日</span>
+            {isDue && <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">⚡ {daysLeft === 0 ? '今天到期' : `${daysLeft} 天后`}</span>}
+            {isOverdue && <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">已过</span>}
+          </div>
+          <div className="flex gap-2 mt-1 flex-wrap">
+            {bill.auto_remind && <span className="text-[10px] text-blue-500">🔔 提醒</span>}
+            {bill.auto_deduct_account && (
+              <span className="text-[10px] text-emerald-600">💳 {bill.auto_deduct_account}</span>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2 mt-1">
-          {bill.auto_remind && <span className="text-[10px] text-blue-500">🔔 提醒</span>}
-          {bill.auto_budget && <span className="text-[10px] text-purple-500">📊 预算</span>}
+
+        <div className="text-right shrink-0">
+          <p className="text-sm font-bold text-red-500">−RM {Number(bill.amount).toFixed(2)}</p>
+          <div className="flex gap-1.5 mt-2 justify-end">
+            <button onClick={() => onEdit(bill)} className="text-xs px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/70 transition-colors">
+              编辑
+            </button>
+            <button
+              onClick={() => onDelete(bill.id)}
+              disabled={deletingId === bill.id}
+              className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-950/30 transition-colors"
+            >
+              删除
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-red-500">−RM {Number(bill.amount).toFixed(2)}</p>
-        <div className="flex gap-1.5 mt-2 justify-end">
-          <button
-            onClick={() => onEdit(bill)}
-            className="text-xs px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/70 transition-colors"
-          >
-            编辑
-          </button>
-          <button
-            onClick={() => onDelete(bill.id)}
-            disabled={deletingId === bill.id}
-            className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-950/30 transition-colors"
-          >
-            删除
-          </button>
-        </div>
-      </div>
+      {/* Deduct button — only if auto_deduct_account is set */}
+      {bill.auto_deduct_account && (
+        <button
+          onClick={handlePay}
+          disabled={paying}
+          className="w-full py-2.5 text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.99] transition-all"
+        >
+          {paying ? '扣款中...' : `💳 从 ${bill.auto_deduct_account} 扣款`}
+        </button>
+      )}
     </div>
   )
 }

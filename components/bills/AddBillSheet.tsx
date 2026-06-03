@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import type { Account } from '@/lib/types/app.types'
 
 const BILL_PRESETS = [
   { emoji: '💡', name: 'TNB (Electricity)', category: 'electricity_tnb' },
@@ -31,6 +32,7 @@ export interface MonthlyBill {
   is_active: boolean
   auto_remind: boolean
   auto_budget: boolean
+  auto_deduct_account: string | null
   notes: string | null
 }
 
@@ -48,11 +50,22 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
   const [emoji, setEmoji] = useState('💡')
   const [category, setCategory] = useState('electricity_tnb')
   const [autoRemind, setAutoRemind] = useState(false)
+  const [autoDeductAccount, setAutoDeductAccount] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [accounts, setAccounts] = useState<Account[]>([])
+
+  const loadAccounts = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('accounts').select('*').eq('user_id', user.id).eq('is_active', true).order('created_at')
+    if (data) setAccounts(data as Account[])
+  }, [])
 
   useEffect(() => {
     if (open) {
+      loadAccounts()
       if (editing) {
         setName(editing.name)
         setAmount(editing.amount.toFixed(2))
@@ -60,13 +73,14 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         setEmoji(editing.emoji)
         setCategory(editing.expense_category ?? 'other_expense')
         setAutoRemind(editing.auto_remind)
+        setAutoDeductAccount(editing.auto_deduct_account ?? '')
         setNotes(editing.notes ?? '')
       } else {
         setName(''); setAmount(''); setDueDay('1'); setEmoji('💡')
-        setCategory('electricity_tnb'); setAutoRemind(false); setNotes('')
+        setCategory('electricity_tnb'); setAutoRemind(false); setAutoDeductAccount(''); setNotes('')
       }
     }
-  }, [open, editing])
+  }, [open, editing, loadAccounts])
 
   function selectPreset(p: typeof BILL_PRESETS[0]) {
     setEmoji(p.emoji)
@@ -95,6 +109,7 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
         emoji,
         auto_remind: autoRemind,
         auto_budget: false,
+        auto_deduct_account: autoDeductAccount.trim() || null,
         notes: notes.trim() || null,
         updated_at: new Date().toISOString(),
       }
@@ -248,7 +263,41 @@ export default function AddBillSheet({ open, onOpenChange, onSaved, editing }: P
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoRemind ? 'translate-x-5' : ''}`} />
               </button>
             </label>
+          </div>
 
+          {/* Auto-deduct account */}
+          <div className="space-y-2 p-3 rounded-xl bg-muted">
+            <div>
+              <p className="text-sm font-medium">💳 自动扣户口（选填）</p>
+              <p className="text-xs text-muted-foreground">选择扣款户口后，在账单列表可一键扣除</p>
+            </div>
+            {accounts.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  onClick={() => setAutoDeductAccount('')}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    !autoDeductAccount ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-border hover:bg-background'
+                  }`}
+                >
+                  不设定
+                </button>
+                {accounts.map(acct => (
+                  <button
+                    key={acct.id}
+                    onClick={() => setAutoDeductAccount(acct.name)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      autoDeductAccount === acct.name
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-border hover:bg-background'
+                    }`}
+                  >
+                    {acct.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">请先在户口页面添加户口</p>
+            )}
           </div>
 
           <Button
