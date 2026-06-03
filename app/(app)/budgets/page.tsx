@@ -1,12 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { Card, CardContent } from '@/components/ui/card'
-import BudgetRow from '@/components/budgets/BudgetRow'
 import BudgetsClient from '@/components/budgets/BudgetsClient'
-import { EXPENSE_CATEGORY_MAP } from '@/lib/constants/categories'
 import type { ExpenseCategory } from '@/lib/types/app.types'
-import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
 
@@ -32,7 +28,7 @@ export default async function BudgetsPage() {
   const [{ data: budgets }, { data: txns }] = await Promise.all([
     supabase
       .from('budgets')
-      .select('expense_category, budget_amount')
+      .select('id, expense_category, budget_amount')
       .eq('user_id', user.id)
       .eq('period_year', year)
       .eq('period_month', month),
@@ -54,6 +50,7 @@ export default async function BudgetsPage() {
   }
 
   const budgetList = (budgets ?? []).map(b => ({
+    id: b.id as string,
     category: b.expense_category as ExpenseCategory,
     budgetAmount: Number(b.budget_amount),
     spentAmount: spendMap[b.expense_category] ?? 0,
@@ -101,26 +98,7 @@ export default async function BudgetsPage() {
       )}
 
       {/* Budget rows */}
-      <BudgetsClient year={year} month={month}>
-        {budgetList.length === 0 ? (
-          <EmptyState
-            emoji="📊"
-            title={t.empty_budgets}
-            body={t.empty_budgets_hint}
-          />
-        ) : (
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              {budgetList.map(b => {
-                const cat = EXPENSE_CATEGORY_MAP[b.category]
-                return cat ? (
-                  <BudgetRow key={b.category} cat={cat} budgetAmount={b.budgetAmount} spentAmount={b.spentAmount} />
-                ) : null
-              })}
-            </CardContent>
-          </Card>
-        )}
-      </BudgetsClient>
+      <BudgetsClient year={year} month={month} budgetList={budgetList} />
     </div>
   )
 }

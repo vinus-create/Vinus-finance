@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.024'
+export const APP_VERSION = '1.025'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.025',
+    date: '2026-06-03',
+    title: '4 大功能升级',
+    changes: [
+      '🏦 贷款添加/编辑：新增「添加至账单提醒」和「添加至月度预算」开关',
+      '📊 月度预算：每行新增「编辑」「删除」按钮',
+      '📋 LHDN 税务：新增「缴税记录」tab，支持 PCB（12 月）和 CP500（6 期）录入',
+      '⚙️ Menu 自定义排序：点「⚙️ 自定义排序」用 ↑↓ 调整 Menu 项目顺序，自动保存',
+      '⚠️ CP500/PCB 需在 Supabase 建表：CREATE TABLE tax_payments ...',
+    ],
+  },
   {
     version: '1.024',
     date: '2026-06-03',

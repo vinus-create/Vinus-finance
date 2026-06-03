@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import AddReliefSheet from './AddReliefSheet'
 import TaxEstimator from './TaxEstimator'
+import TaxPayments from './TaxPayments'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 
 interface Relief {
@@ -109,13 +110,14 @@ export default function TaxClient({ year, maxYear, taxForm, reliefs, children, t
         {/* Tabs */}
         <Tabs defaultValue="reliefs">
           <div className="flex items-center justify-between mb-3">
-            <TabsList className="grid grid-cols-2 w-64">
-              <TabsTrigger value="reliefs">{t.tax_reliefs_tab}</TabsTrigger>
-              <TabsTrigger value="estimator">{t.tax_estimate_tab}</TabsTrigger>
+            <TabsList className="grid grid-cols-3 flex-1 mr-2">
+              <TabsTrigger value="reliefs" className="text-xs">{t.tax_reliefs_tab}</TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs">缴税记录</TabsTrigger>
+              <TabsTrigger value="estimator" className="text-xs">{t.tax_estimate_tab}</TabsTrigger>
             </TabsList>
             <Button
               size="sm"
-              className="bg-emerald-500 text-white hover:bg-emerald-600 h-8 text-xs"
+              className="bg-emerald-500 text-white hover:bg-emerald-600 h-8 text-xs shrink-0"
               onClick={() => setAddOpen(true)}
             >
               {t.tax_add_btn}
@@ -132,6 +134,10 @@ export default function TaxClient({ year, maxYear, taxForm, reliefs, children, t
                 </p>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <TaxPayments year={year} />
           </TabsContent>
 
           <TabsContent value="estimator">
