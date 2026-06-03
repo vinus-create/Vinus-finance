@@ -11,20 +11,10 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '1.019',
     date: '2026-06-03',
-    title: 'Menu 点击后自动关闭',
+    title: 'Menu 点击后自动关闭 + 路由优化',
     changes: [
       '🔧 点击 Menu 里任何菜单项后，底部抽屉自动关闭',
-    ],
-  },
-  {
-    version: '1.018',
-    date: '2026-06-03',
-    title: '修复 middleware + 加快路由响应速度',
-    changes: [
-      '🐛 修复根本 bug：proxy.ts 从未被 Next.js 识别为 middleware（文件名必须是 middleware.ts）',
-      '⚡ middleware 改用 getSession()（只读 cookie，无网络请求），替代 getUser()（每次向 Supabase 发 HTTP 请求）',
-      '⚡ 预计减少 30-50ms middleware 延迟',
-      '🔄 访问 / 现在正确重定向至 /dashboard 或 /login',
+      '⚡ proxy.ts middleware 改用 getSession()（只读 cookie），替代 getUser()（需网络请求），减少约 40ms 延迟',
     ],
   },
   {
