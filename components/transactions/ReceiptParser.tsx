@@ -68,7 +68,6 @@ export default function ReceiptParser({ onParsed }: Props) {
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="environment"
         className="hidden"
         onChange={handleFileChange}
       />
