@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.035'
+export const APP_VERSION = '1.036'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.036',
+    date: '2026-06-03',
+    title: 'AI 建议刷新按钮（每日限 5 次）',
+    changes: [
+      '🔄 AI 今日理财建议右上角加刷新按钮，显示今日剩余次数（5/5）',
+      '🔒 每天最多刷新 5 次，次数记录在 localStorage，按日重置',
+      '⬜ 达到上限后按钮变灰不可点',
+    ],
+  },
   {
     version: '1.035',
     date: '2026-06-03',

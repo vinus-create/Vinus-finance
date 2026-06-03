@@ -193,38 +193,104 @@ export default function DashboardWidgets({ data }: { data: WidgetData }) {
 
 // ─── AI Tip Widget (client fetch) ────────────────────────────
 
+const MAX_DAILY_REFRESHES = 5
+
+function getRefreshCount(): number {
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const raw = localStorage.getItem(`ai_tip_refreshes_${today}`)
+    return raw ? parseInt(raw) : 0
+  } catch { return 0 }
+}
+
+function incrementRefreshCount(): number {
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const key = `ai_tip_refreshes_${today}`
+    const next = getRefreshCount() + 1
+    localStorage.setItem(key, String(next))
+    return next
+  } catch { return 0 }
+}
+
 function AiTipWidget({ userId }: { userId: string }) {
   const [tip, setTip] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshCount, setRefreshCount] = useState(0)
+
+  function cacheKey(bust = false) {
+    // bust=true uses a timestamp suffix to bypass cache
+    const base = `ai_tip_${userId}_${new Date().toISOString().slice(0, 13)}`
+    return bust ? `${base}_${Date.now()}` : base
+  }
+
+  async function fetchTip(forceRefresh = false) {
+    setLoading(true)
+    try {
+      // Check cache unless forcing refresh
+      if (!forceRefresh) {
+        const cached = sessionStorage.getItem(cacheKey())
+        if (cached) { setTip(cached); return }
+      }
+      const res = await fetch(`/api/ai/daily-tip?user_id=${userId}&t=${forceRefresh ? Date.now() : ''}`)
+      const { tip: newTip } = await res.json()
+      if (newTip) {
+        // Store under a timestamped key so next auto-load gets fresh tip
+        const key = forceRefresh ? cacheKey(true) : cacheKey()
+        sessionStorage.setItem(key, newTip)
+        // Also update the hourly cache key so next page load shows this tip
+        sessionStorage.setItem(cacheKey(), newTip)
+        setTip(newTip)
+      }
+    } catch {
+      setTip(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Check cache first (1 hour)
-    const cacheKey = `ai_tip_${userId}_${new Date().toISOString().slice(0, 13)}`
-    const cached = sessionStorage.getItem(cacheKey)
-    if (cached) { setTip(cached); setLoading(false); return }
-
-    fetch(`/api/ai/daily-tip?user_id=${userId}`)
-      .then(r => r.json())
-      .then(({ tip }) => {
-        if (tip) {
-          sessionStorage.setItem(cacheKey, tip)
-          setTip(tip)
-        }
-      })
-      .catch(() => setTip(null))
-      .finally(() => setLoading(false))
+    setRefreshCount(getRefreshCount())
+    fetchTip(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
+
+  function handleRefresh() {
+    const count = getRefreshCount()
+    if (count >= MAX_DAILY_REFRESHES) return
+    const next = incrementRefreshCount()
+    setRefreshCount(next)
+    fetchTip(true)
+  }
+
+  const remaining = MAX_DAILY_REFRESHES - refreshCount
+  const canRefresh = remaining > 0 && !loading
 
   return (
     <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200/50 dark:border-emerald-800/50">
-      <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">🤖 AI 今日理财建议</p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">🤖 AI 今日理财建议</p>
+        <button
+          onClick={handleRefresh}
+          disabled={!canRefresh}
+          title={canRefresh ? `刷新建议（今日剩余 ${remaining} 次）` : '今日已达上限（5次）'}
+          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-colors ${
+            canRefresh
+              ? 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 cursor-pointer'
+              : 'text-muted-foreground/40 cursor-not-allowed'
+          }`}
+        >
+          <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span>
+          <span>{remaining}/{MAX_DAILY_REFRESHES}</span>
+        </button>
+      </div>
       {loading ? (
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-muted-foreground">生成中...</span>
         </div>
       ) : tip ? (
-        <p className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100">{tip}</p>
+        <p className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100 whitespace-pre-line">{tip}</p>
       ) : (
         <p className="text-xs text-muted-foreground">今日建议暂不可用</p>
       )}
