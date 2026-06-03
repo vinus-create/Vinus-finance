@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.032'
+export const APP_VERSION = '1.033'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.033',
+    date: '2026-06-03',
+    title: '每月账单 + 贷款月供合并总览',
+    changes: [
+      '📊 每月账单顶部新增「每月固定总支出」汇总卡：账单合计 + 贷款月供 = 总固定支出',
+      '🏦 页面底部显示所有贷款月供（只读），含下次还款日和金额',
+      '🔗 贷款区域右上角「管理 →」跳转贷款页面',
+      '✅ 两个页面各自保持独立，不合并，不乱',
+    ],
+  },
   {
     version: '1.032',
     date: '2026-06-03',
