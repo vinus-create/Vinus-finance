@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.046'
+export const APP_VERSION = '1.047'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.047',
+    date: '2026-06-03',
+    title: 'Telegram 一键绑定 + 收据相册修复',
+    changes: [
+      '🔗 Telegram 一键绑定：点按钮自动打开 Bot，用户只需点 START 即绑定',
+      '✅ 设置页显示 Telegram 连接状态，支持一键解绑',
+      '⏰ Token 15 分钟有效期，过期自动提示重新生成',
+      '📸 修复 iPhone Chrome 收据无法选相册（移除 capture=environment）',
+    ],
+  },
   {
     version: '1.046',
     date: '2026-06-03',

@@ -223,15 +223,47 @@ export async function POST(request: NextRequest) {
     profile = data
   } catch { /* column may not exist */ }
 
-  // ── /start ───────────────────────────────────────────────────
+  // ── /start [token] ───────────────────────────────────────────
   if (text.startsWith('/start')) {
+    const token = text.slice(7).trim()   // everything after "/start "
+
+    // Auto-link via deep-link token
+    if (token && token.length > 10) {
+      const { data: tokenRow } = await supabase
+        .from('telegram_link_tokens')
+        .select('user_id, expires_at')
+        .eq('token', token)
+        .single()
+
+      if (!tokenRow) {
+        await sendMsg(chatId, `❌ Invalid or expired link.\n\nGenerate a new one in Vinus Finance → Settings.`)
+        return NextResponse.json({ ok: true })
+      }
+
+      if (new Date(tokenRow.expires_at) < new Date()) {
+        await supabase.from('telegram_link_tokens').delete().eq('token', token)
+        await sendMsg(chatId, `⏰ Link expired (15 min limit).\n\nGenerate a new one in Vinus Finance → Settings.`)
+        return NextResponse.json({ ok: true })
+      }
+
+      // Link the account
+      await supabase.from('profiles').update({ telegram_id: fromId }).eq('id', tokenRow.user_id)
+      await supabase.from('telegram_link_tokens').delete().eq('token', token)
+
+      await sendMsg(chatId,
+        `✅ *Account linked!*\n\nHi *${firstName}*! Your Vinus Finance account is now connected 🎉\n\nSend me:\n• Text: \`rm15 nasi lemak\`\n• Photo: receipt 📸\n• Voice note 🎤\n\n/help for all commands`
+      )
+      return NextResponse.json({ ok: true })
+    }
+
+    // Normal /start (no token)
     if (profile) {
       await sendMsg(chatId,
         `👋 Welcome back *${profile.full_name ?? firstName}*!\n\nSend any transaction:\n• Text: \`rm15 nasi lemak\`\n• Photo: receipt 📸\n• Voice note 🎤\n\nCommands: /undo /report /help`
       )
     } else {
       await sendMsg(chatId,
-        `👋 Hi *${firstName}*! I'm Vinus Finance bot 🤖\n\n*Link your account:*\nSend: \`/link your@email.com\`\n\n_Your Telegram ID: \`${fromId}\`_`
+        `👋 Hi *${firstName}*! I'm Vinus Finance bot 🤖\n\nTo link your account:\n1. Open Vinus Finance app\n2. Go to Settings → Connect Telegram\n3. Tap the button to auto-link\n\n_Or send: \`/link your@email.com\`_\n_Your Telegram ID: \`${fromId}\`_`
       )
     }
     return NextResponse.json({ ok: true })
