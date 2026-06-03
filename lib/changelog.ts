@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.045'
+export const APP_VERSION = '1.046'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.046',
+    date: '2026-06-03',
+    title: '月薪管理独立模块 + 移除交易面板 EPF/PCB',
+    changes: [
+      '💼 新增月薪管理页面（菜单 → 月薪管理）',
+      '📊 输入月薪自动计算 EPF/SOCSO/EIS/PCB 完整明细',
+      '🔘 独立 toggle 选择记录项目（工资、EPF持仓、各项扣款）',
+      '💾 一键记录本月工资：同时写入收支交易 + 更新 KWSP-EPF 持仓',
+      '🧹 交易确认页移除 EPF/PCB 面板（改到专属模块）',
+    ],
+  },
   {
     version: '1.045',
     date: '2026-06-03',
