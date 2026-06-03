@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.028'
+export const APP_VERSION = '1.029'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.029',
+    date: '2026-06-03',
+    title: '信用卡还款提醒',
+    changes: [
+      '💳 信用卡户口新增「每月还款日」字段',
+      '🔔 余额为负 + 设了还款日 → 出现「添加至账单提醒」开关',
+      '📅 开启后自动创建每月提醒，到期前 3 天通知还款金额',
+      '⚠️ 需在 Supabase 执行：ALTER TABLE accounts ADD COLUMN IF NOT EXISTS due_day INTEGER;',
+    ],
+  },
   {
     version: '1.028',
     date: '2026-06-03',

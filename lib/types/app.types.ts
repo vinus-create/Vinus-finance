@@ -219,6 +219,7 @@ export interface Account {
   color: string | null
   is_active: boolean
   include_in_net_worth: boolean
+  due_day: number | null
   notes: string | null
   created_at: string
   updated_at: string

@@ -24,6 +24,7 @@ function blank() {
     institution: '',
     account_number: '',
     balance: '',
+    due_day: '',
     include_in_net_worth: true,
     notes: '',
   }
@@ -36,6 +37,7 @@ function toForm(a: Account) {
     institution: a.institution ?? '',
     account_number: a.account_number ?? '',
     balance: String(a.balance),
+    due_day: a.due_day ? String(a.due_day) : '',
     include_in_net_worth: a.include_in_net_worth,
     notes: a.notes ?? '',
   }
@@ -51,11 +53,13 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState(account ? toForm(account) : blank())
   const [showInstitutions, setShowInstitutions] = useState(false)
+  const [autoRemind, setAutoRemind] = useState(false)
 
   useEffect(() => {
     if (open) {
       setForm(account ? toForm(account) : blank())
       setShowInstitutions(false)
+      setAutoRemind(false)
     }
   }, [open, account])
 
@@ -86,6 +90,8 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error(t.err_session)
 
+      const dueDay = form.due_day ? parseInt(form.due_day) : null
+
       const payload = {
         name: form.name.trim(),
         account_type: form.account_type,
@@ -94,6 +100,7 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
         balance,
         currency: 'MYR',
         include_in_net_worth: form.include_in_net_worth,
+        due_day: dueDay,
         notes: form.notes.trim() || null,
         updated_at: new Date().toISOString(),
       }
@@ -104,6 +111,37 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
       } else {
         const { error: e } = await supabase.from('accounts').insert({ ...payload, user_id: user.id, is_active: true })
         if (e) throw new Error(e.message)
+      }
+
+      // 🔔 Auto-remind for credit card with negative balance
+      if (autoRemind && form.account_type === 'credit_card' && balance < 0 && dueDay) {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1
+        const lastDay = new Date(year, month, 0).getDate()
+        const clampedDay = Math.min(dueDay, lastDay)
+        // If due day already passed this month, use next month
+        const dueThisMonth = new Date(year, month - 1, clampedDay)
+        const useNextMonth = dueThisMonth <= now
+        const targetMonth = useNextMonth ? month + 1 : month
+        const targetYear = targetMonth > 12 ? year + 1 : year
+        const normalizedMonth = targetMonth > 12 ? 1 : targetMonth
+        const lastDayTarget = new Date(targetYear, normalizedMonth, 0).getDate()
+        const finalDay = Math.min(clampedDay, lastDayTarget)
+        const dueDate = `${targetYear}-${String(normalizedMonth).padStart(2, '0')}-${String(finalDay).padStart(2, '0')}`
+
+        await supabase.from('reminders').insert({
+          user_id: user.id,
+          title: `${form.name.trim()} 信用卡还款`,
+          amount: Math.abs(balance),
+          currency: 'MYR',
+          due_date: dueDate,
+          frequency: 'monthly',
+          status: 'active',
+          notify_push: true,
+          notify_email: false,
+          days_before: 3,
+        })
       }
 
       onOpenChange(false)
@@ -217,11 +255,45 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
             </div>
           </div>
 
-          {/* Note: for credit cards, negative balance = debt */}
+          {/* Credit card extra fields */}
           {form.account_type === 'credit_card' && (
-            <p className="text-[10px] text-muted-foreground bg-muted px-3 py-2 rounded-lg">
-              💡 Enter a negative balance (e.g. -2500) if you owe money on this card.
-            </p>
+            <div className="space-y-3">
+              <p className="text-[10px] text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+                💡 如欠款请填负数余额，例如 -2500
+              </p>
+
+              {/* Due date */}
+              <div className="space-y-1.5">
+                <Label className="text-xs">每月还款日（1–31）</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  placeholder="例：15"
+                  value={form.due_day}
+                  onChange={e => set('due_day', e.target.value)}
+                  className="h-10 w-32"
+                />
+              </div>
+
+              {/* Auto-remind toggle — only shown if balance negative and due_day set */}
+              {parseFloat(form.balance || '0') < 0 && form.due_day && (
+                <label className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 cursor-pointer">
+                  <div>
+                    <p className="text-sm font-medium">🔔 添加至账单提醒</p>
+                    <p className="text-xs text-muted-foreground">
+                      每月 {form.due_day} 日前 3 天提醒还款 RM {Math.abs(parseFloat(form.balance || '0')).toFixed(2)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setAutoRemind(v => !v)}
+                    className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${autoRemind ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoRemind ? 'translate-x-5' : ''}`} />
+                  </button>
+                </label>
+              )}
+            </div>
           )}
 
           {/* Include in net worth toggle */}
