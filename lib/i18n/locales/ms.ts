@@ -60,7 +60,7 @@ export const ms: Translations = {
   form_account_name: 'Nama Akaun',
   form_account_type_label: 'Jenis Akaun',
   form_institution: 'Bank / Institusi',
-  form_account_number: '4 digit terakhir (pilihan)',
+  form_account_number: 'Nombor Akaun (pilihan)',
   form_balance_label: 'Baki Semasa',
   form_include_net_worth: 'Sertakan dalam Nilai Bersih',
   form_save_account: 'Tambah Akaun',

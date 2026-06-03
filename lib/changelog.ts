@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.019'
+export const APP_VERSION = '1.020'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.020',
+    date: '2026-06-03',
+    title: '户口表单字段更新',
+    changes: [
+      '✏️ 编辑户口表单："后4位数字（选填）" → "户口号码（选填）"（支持完整户口号）',
+    ],
+  },
   {
     version: '1.019',
     date: '2026-06-03',

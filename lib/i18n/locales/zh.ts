@@ -60,7 +60,7 @@ export const zh: Translations = {
   form_account_name: '户口名称',
   form_account_type_label: '户口类型',
   form_institution: '银行 / 机构',
-  form_account_number: '后4位数字（选填）',
+  form_account_number: '户口号码（选填）',
   form_balance_label: '当前余额',
   form_include_net_worth: '计入净资产',
   form_save_account: '添加户口',

@@ -60,7 +60,7 @@ export const en: Translations = {
   form_account_name: 'Account Name',
   form_account_type_label: 'Account Type',
   form_institution: 'Bank / Institution',
-  form_account_number: 'Last 4 digits (optional)',
+  form_account_number: 'Account Number (optional)',
   form_balance_label: 'Current Balance',
   form_include_net_worth: 'Include in Net Worth',
   form_save_account: 'Add Account',
