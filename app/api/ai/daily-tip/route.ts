@@ -54,7 +54,20 @@ export async function GET(request: NextRequest) {
 
     const model = getFlashModel()
     const result = await model.generateContent(
-      `你是马来西亚个人理财助手 Vinus Finance。根据以下用户财务数据，用中文给出今日一句实用理财建议（不超过80字，要具体、有针对性，不要泛泛而谈）：\n\n${context}`
+      `你是马来西亚个人理财助手 Vinus Finance。请做以下两件事：
+
+1. 根据用户的财务数据，用中文给出一句具体、有针对性的理财建议（30-50字，结合用户实际情况，不要泛泛而谈）。
+
+2. 引用一位世界著名投资家/企业家的理财名言（巴菲特、芒格、彼得林奇、瑞·达利欧、罗伯特·清崎等），附上人名，并用一句话说明与用户当前状况的关联（20-30字）。
+
+格式：
+💡 [个人化建议]
+
+📖 "[名言原文]" —— [人名]
+→ [与用户现状的关联]
+
+用户财务数据：
+${context}`
     )
     const tip = result.response.text().trim()
 

@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.034'
+export const APP_VERSION = '1.035'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.035',
+    date: '2026-06-03',
+    title: 'AI 理财建议 + 世界名人名言',
+    changes: [
+      '📖 AI 每日理财建议新增世界名人名言（巴菲特、芒格、彼得林奇等）',
+      '💡 格式：个人化建议 + 名言引用 + 与用户当前状况的关联',
+    ],
+  },
   {
     version: '1.034',
     date: '2026-06-03',
