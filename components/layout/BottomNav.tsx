@@ -1,17 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Home, ArrowLeftRight, Plus, Wallet, LayoutGrid } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import MenuCustomizeSheet from './MenuCustomizeSheet'
+import { useFab } from '@/lib/contexts/FabContext'
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const { t } = useLang()
+  const { fabAction } = useFab()
   const [menuOpen, setMenuOpen] = useState(false)
   const [customizeOpen, setCustomizeOpen] = useState(false)
 
@@ -63,14 +66,14 @@ export default function BottomNav() {
           {NAV_ITEMS.map((item) => {
             if (item.isFab) {
               return (
-                <Link
+                <button
                   key="fab"
-                  href="/transactions?new=1"
+                  onClick={() => fabAction ? fabAction() : router.push('/transactions?new=1')}
                   className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform -mt-5"
                   aria-label={t.nav_add_aria}
                 >
                   <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
-                </Link>
+                </button>
               )
             }
 

@@ -6,6 +6,7 @@ import LoanCalculator from './LoanCalculator'
 import AddLoanSheet from './AddLoanSheet'
 import type { Loan } from '@/lib/types/app.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 interface Props {
   loans: Loan[]
@@ -16,6 +17,7 @@ export default function LoansClient({ children }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('tracker')
   const { t } = useLang()
+  useFabAction(() => setAddOpen(true))
 
   return (
     <div className="px-4 mt-4 pb-24">

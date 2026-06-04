@@ -10,6 +10,7 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 import EmptyState from '@/components/ui/EmptyState'
 import type { UserAsset, UserAssetType } from '@/lib/types/app.types'
 import { cn } from '@/lib/utils'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 const ASSET_TYPES: { value: UserAssetType; labelKey: string; emoji: string }[] = [
   { value: 'property',   labelKey: 'asset_type_property',  emoji: '🏠' },
@@ -26,6 +27,7 @@ export default function AssetsClient({ assets }: Props) {
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
   const [editAsset, setEditAsset] = useState<UserAsset | null>(null)
+  useFabAction(() => { setEditAsset(null); setAddOpen(true) })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

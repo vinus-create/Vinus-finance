@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import BottomNav from '@/components/layout/BottomNav'
+import { FabProvider } from '@/lib/contexts/FabContext'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,11 +19,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background">
-      <main className="flex-1 page-content overflow-y-auto">
-        {children}
-      </main>
-      <BottomNav />
-    </div>
+    <FabProvider>
+      <div className="flex flex-col min-h-[100dvh] bg-background">
+        <main className="flex-1 page-content overflow-y-auto">
+          {children}
+        </main>
+        <BottomNav />
+      </div>
+    </FabProvider>
   )
 }

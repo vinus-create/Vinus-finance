@@ -7,6 +7,7 @@ import { ACCOUNT_TYPE_CONFIG } from '@/lib/constants/accounts'
 import AccountCard from './AccountCard'
 import AddAccountSheet from './AddAccountSheet'
 import EmptyState from '@/components/ui/EmptyState'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 interface Props {
   accounts: Account[]
@@ -21,6 +22,7 @@ export default function AccountsClient({ accounts, netWorth, totalAssets, totalL
   const { t } = useLang()
   const [addOpen, setAddOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<Account | undefined>()
+  useFabAction(() => setAddOpen(true))
 
   // Group by type
   const grouped = TYPE_ORDER.reduce((acc, type) => {

@@ -11,6 +11,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import { EXPENSE_CATEGORY_MAP } from '@/lib/constants/categories'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { ExpenseCategory } from '@/lib/types/app.types'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 interface BudgetItem {
   id: string
@@ -31,6 +32,7 @@ export default function BudgetsClient({ year, month, budgetList: initial }: Prop
   const [budgets, setBudgets] = useState<BudgetItem[]>(initial)
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState<BudgetItem | null>(null)
+  useFabAction(() => { setEditItem(null); setAddOpen(true) })
 
   async function handleDelete(item: BudgetItem) {
     if (!confirm(`删除「${item.category}」预算？`)) return

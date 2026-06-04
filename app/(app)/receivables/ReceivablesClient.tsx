@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ export default function ReceivablesClient({ unpaid, paid }: Props) {
   const { t } = useLang()
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
+  useFabAction(() => setAddOpen(true))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

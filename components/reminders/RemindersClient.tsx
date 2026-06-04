@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import AddReminderSheet from './AddReminderSheet'
 import { useLang } from '@/lib/i18n/LanguageProvider'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 interface Props {
   children: React.ReactNode
@@ -11,6 +12,7 @@ interface Props {
 export default function RemindersClient({ children }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const { t } = useLang()
+  useFabAction(() => setAddOpen(true))
 
   return (
     <>

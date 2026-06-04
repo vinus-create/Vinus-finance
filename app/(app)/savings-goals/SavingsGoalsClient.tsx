@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -53,6 +54,7 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
   const { t } = useLang()
   const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
+  useFabAction(() => setAddOpen(true))
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null)
   const [depositGoal, setDepositGoal] = useState<SavingsGoal | null>(null)
   const [depositAmount, setDepositAmount] = useState('')

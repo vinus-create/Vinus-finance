@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import AddBillSheet, { type MonthlyBill } from './AddBillSheet'
 import EmptyState from '@/components/ui/EmptyState'
+import { useFabAction } from '@/lib/hooks/useFabAction'
 
 interface Props {
   initialBills: MonthlyBill[]
@@ -24,6 +25,7 @@ export default function BillsClient({ initialBills }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingBill, setEditingBill] = useState<MonthlyBill | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  useFabAction(() => { setEditingBill(null); setSheetOpen(true) })
 
   function openAdd() { setEditingBill(null); setSheetOpen(true) }
   function openEdit(b: MonthlyBill) { setEditingBill(b); setSheetOpen(true) }
