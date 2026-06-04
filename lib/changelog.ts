@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.051'
+export const APP_VERSION = '1.052'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.052',
+    date: '2026-06-05',
+    title: '修复 PWA 图标空白问题（改用静态 PNG）',
+    changes: [
+      '🖼️ 生成真实静态 PNG 图标：icon-192x192.png、icon-512x512.png、apple-touch-icon.png',
+      '📱 manifest.json 改用 /icons/*.png 静态路径（替代 edge 动态路由）',
+      '🍎 layout.tsx apple-touch-icon 改用 /icons/apple-touch-icon.png',
+      '🔧 新增 scripts/generate-icons.js 用于重新生成图标',
+    ],
+  },
   {
     version: '1.051',
     date: '2026-06-05',
