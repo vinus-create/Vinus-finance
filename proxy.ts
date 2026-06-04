@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram']
+const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram', '/api/pwa-icon']
 // Auth-required but exempt from "redirect logged-in users away" rule
 const AUTH_EXEMPT = ['/onboarding']
 
@@ -33,10 +33,12 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // getSession() reads JWT from cookie only — no network call to Supabase (saves ~40ms).
-  // Pages still call getUser() for full server-side validation.
-  const { data: { session } } = await supabase.auth.getSession()
-  const isLoggedIn = !!session
+  // Use getUser() to validate the session against Supabase server.
+  // This also refreshes the access token if it has expired (using the refresh token).
+  // Prevents the stale-cookie redirect loop where getSession() returns a user
+  // but getUser() in pages returns null (causing /dashboard → /login → /dashboard loop).
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
 
   const { pathname } = request.nextUrl
 

@@ -5,9 +5,48 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.047'
+export const APP_VERSION = '1.050'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.050',
+    date: '2026-06-05',
+    title: '修复无限重定向循环',
+    changes: [
+      '🔁 修复 ERR_TOO_MANY_REDIRECTS 循环（session cookie 过期导致）',
+      '🔐 proxy.ts 改用 getUser() 验证 session，防止 stale cookie 导致的死循环',
+      '🔓 /api/pwa-icon 加入公开路径，无需登录即可加载 PWA 图标',
+    ],
+  },
+  {
+    version: '1.049',
+    date: '2026-06-05',
+    title: '中间 + 按钮感知当前页面',
+    changes: [
+      '🎯 中间圆形 + 按钮根据当前页面自动触发对应的添加功能',
+      '🏦 户口页 → 添加户口',
+      '🏦 贷款页 → 添加贷款',
+      '🧾 账单页 → 添加账单',
+      '📊 预算页 → 设置预算',
+      '🔔 提醒页 → 添加提醒',
+      '🎯 存钱目标页 → 添加目标',
+      '🤝 谁欠我钱页 → 添加记录',
+      '🏠 名下资产页 → 添加资产',
+      '📱 其他页面维持默认（添加交易）',
+      '🔧 新增 FabContext + useFabAction hook',
+    ],
+  },
+  {
+    version: '1.048',
+    date: '2026-06-05',
+    title: 'PWA 图标修复 — 添加到主屏幕',
+    changes: [
+      '📱 修复 iPhone 添加到主屏幕显示空白图标问题',
+      '🎨 新增动态 PWA 图标 API（/api/pwa-icon/[size]）',
+      '✅ 支持 192×192、512×512（Manifest）、180×180（Apple Touch Icon）',
+      '🔧 更新 manifest.json 图标引用路径',
+    ],
+  },
   {
     version: '1.047',
     date: '2026-06-03',
