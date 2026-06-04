@@ -132,11 +132,6 @@ export default function ReceivablesClient({ unpaid, paid }: Props) {
         </TabsContent>
       </Tabs>
 
-      {/* FAB */}
-      <button onClick={() => { resetForm(); setAddOpen(true) }}
-        className="fixed bottom-20 right-4 flex items-center gap-1.5 px-5 h-12 rounded-2xl bg-amber-500 shadow-lg shadow-amber-500/30 text-white text-sm font-semibold active:scale-95 transition-transform z-40">
-        + 新增记录
-      </button>
 
       {/* Add Sheet */}
       <Sheet open={addOpen} onOpenChange={setAddOpen}>

@@ -91,14 +91,6 @@ export default function BillsClient({ initialBills }: Props) {
         </div>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={openAdd}
-        className="fixed bottom-24 right-4 bg-emerald-500 text-white px-5 py-3 rounded-full shadow-lg shadow-emerald-500/30 text-sm font-semibold active:scale-95 transition-transform"
-      >
-        + 添加账单
-      </button>
-
       <AddBillSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}

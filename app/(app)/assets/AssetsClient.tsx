@@ -205,11 +205,6 @@ export default function AssetsClient({ assets }: Props) {
         ))
       )}
 
-      {/* FAB */}
-      <button onClick={() => { resetForm(); setAddOpen(true) }}
-        className="fixed bottom-20 right-4 flex items-center gap-1.5 px-5 h-12 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30 text-white text-sm font-semibold active:scale-95 transition-transform z-40">
-        + 新增资产
-      </button>
 
       <FormSheet open={addOpen} onClose={() => { setAddOpen(false); resetForm() }} title={t.form_add_asset} />
       <FormSheet open={!!editAsset} onClose={() => { setEditAsset(null); resetForm() }} title="编辑资产" />

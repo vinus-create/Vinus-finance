@@ -90,13 +90,6 @@ export default function BudgetsClient({ year, month, budgetList: initial }: Prop
         )}
       </div>
 
-      <button
-        onClick={() => { setEditItem(null); setAddOpen(true) }}
-        className="fixed bottom-20 right-4 flex items-center gap-1.5 px-5 h-12 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 text-white text-sm font-semibold active:scale-95 transition-transform z-40"
-      >
-        {t.budgets_set_btn}
-      </button>
-
       <SetBudgetSheet
         open={addOpen}
         onOpenChange={handleSheetClose}

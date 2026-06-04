@@ -36,16 +36,6 @@ export default function LoansClient({ children }: Props) {
         </TabsContent>
       </Tabs>
 
-      {activeTab === 'tracker' && (
-        <button
-          onClick={() => setAddOpen(true)}
-          className="fixed bottom-20 right-4 flex items-center gap-1.5 px-5 h-12 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 text-white text-sm font-semibold active:scale-95 transition-transform z-40"
-          aria-label={t.loans_add_aria}
-        >
-          {t.loans_add_btn}
-        </button>
-      )}
-
       <AddLoanSheet open={addOpen} onOpenChange={setAddOpen} />
     </div>
   )

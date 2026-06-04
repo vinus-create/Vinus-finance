@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { RefreshCw } from 'lucide-react'
 import type { StockHolding, StockTrade, StockWatchlist } from '@/lib/types/app.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
+import { useFab } from '@/lib/contexts/FabContext'
 import HoldingCard from './HoldingCard'
 import PortfolioChart from './PortfolioChart'
 import AddHoldingSheet from './AddHoldingSheet'
@@ -28,12 +29,27 @@ type Tab = 'portfolio' | 'watchlist' | 'history'
 
 export default function StocksClient({ holdings, trades, watchlist }: Props) {
   const { t } = useLang()
+  const { setFabAction } = useFab()
   const [tab, setTab] = useState<Tab>('portfolio')
   const [prices, setPrices] = useState<Record<string, PriceData | null>>({})
   const [loadingPrices, setLoadingPrices] = useState(false)
   const [addHoldingOpen, setAddHoldingOpen] = useState(false)
   const [editHolding, setEditHolding] = useState<StockHolding | undefined>()
   const [addWatchlistOpen, setAddWatchlistOpen] = useState(false)
+
+  // Register FAB action based on active tab
+  useEffect(() => {
+    if (tab === 'history') {
+      setFabAction(null)
+      return
+    }
+    if (tab === 'portfolio') {
+      setFabAction(() => () => { setEditHolding(undefined); setAddHoldingOpen(true) })
+    } else {
+      setFabAction(() => () => setAddWatchlistOpen(true))
+    }
+    return () => setFabAction(null)
+  }, [tab, setFabAction])
 
   const allTickers = Array.from(new Set([
     ...holdings.map(h => h.ticker),
@@ -191,23 +207,6 @@ export default function StocksClient({ holdings, trades, watchlist }: Props) {
               </div>
         )}
       </div>
-
-      {/* FAB */}
-      {tab !== 'history' && (
-        <button
-          onClick={() => {
-            if (tab === 'portfolio') {
-              setEditHolding(undefined)
-              setAddHoldingOpen(true)
-            } else {
-              setAddWatchlistOpen(true)
-            }
-          }}
-          className="fixed bottom-20 right-4 flex items-center gap-1.5 px-5 h-12 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 text-white text-sm font-semibold active:scale-95 transition-transform z-40"
-        >
-          {tab === 'portfolio' ? t.stocks_add_holding : t.stocks_add_watchlist}
-        </button>
-      )}
 
       {/* Sheets */}
       <AddHoldingSheet

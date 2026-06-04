@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.050'
+export const APP_VERSION = '1.051'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.051',
+    date: '2026-06-05',
+    title: '移除各页面右侧悬浮添加按钮',
+    changes: [
+      '🗑️ 移除所有页面右下角悬浮添加按钮（统一用中间圆形 + 代替）',
+      '📈 股票页 FAB 感知 tab：持仓→添加持仓，关注→添加关注，历史→无动作',
+      '✅ 涉及页面：账单、户口、预算、贷款、提醒、存钱目标、谁欠我钱、名下资产、股票',
+    ],
+  },
   {
     version: '1.050',
     date: '2026-06-05',
