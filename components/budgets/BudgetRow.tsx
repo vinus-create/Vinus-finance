@@ -1,5 +1,6 @@
 'use client'
 
+import { Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CategoryMeta } from '@/lib/constants/categories'
 import { useLang } from '@/lib/i18n/LanguageProvider'
@@ -34,13 +35,13 @@ export default function BudgetRow({ cat, budgetAmount, spentAmount, onEdit, onDe
             <p className="text-xs text-muted-foreground">/ RM {budgetAmount.toFixed(2)}</p>
           </div>
           {onEdit && (
-            <button onClick={onEdit} className="text-xs px-2 py-1 rounded-lg bg-muted hover:bg-muted/70 transition-colors">
-              编辑
+            <button onClick={onEdit} className="p-1.5 rounded-lg bg-muted hover:bg-muted/70 transition-colors" aria-label="编辑">
+              <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           )}
           {onDelete && (
-            <button onClick={onDelete} className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-950/30 transition-colors">
-              删除
+            <button onClick={onDelete} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/30 transition-colors" aria-label="删除">
+              <Trash2 className="w-3.5 h-3.5 text-red-500" />
             </button>
           )}
         </div>

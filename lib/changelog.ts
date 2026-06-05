@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.053'
+export const APP_VERSION = '1.054'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.054',
+    date: '2026-06-05',
+    title: '修复预算页行溢出（编辑/删除改图标按钮）',
+    changes: [
+      '🔧 BudgetRow 编辑/删除按钮改为图标（Pencil/Trash2），减少横向宽度',
+      '📱 修复手机上预算行右边按钮被截断的问题',
+    ],
+  },
   {
     version: '1.053',
     date: '2026-06-05',
