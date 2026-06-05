@@ -112,25 +112,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
         .eq('user_id', user.id)
       if (updateError) throw new Error(updateError.message)
 
-      // Reverse old balance impact on old account
-      const oldImpact = txn.type === 'income' ? txn.amount : -txn.amount
-      const newImpact = type === 'income' ? amount : -amount
-
-      if (txn.account_name === accountName) {
-        // Same account: apply net delta
-        const delta = newImpact - oldImpact
-        if (delta !== 0) {
-          const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-          if (acct) await supabase.from('accounts').update({ balance: acct.balance + delta }).eq('id', acct.id)
-        }
-      } else {
-        // Different accounts: reverse old, apply new
-        const { data: oldAcct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', txn.account_name).maybeSingle()
-        if (oldAcct) await supabase.from('accounts').update({ balance: oldAcct.balance - oldImpact }).eq('id', oldAcct.id)
-        const { data: newAcct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (newAcct) await supabase.from('accounts').update({ balance: newAcct.balance + newImpact }).eq('id', newAcct.id)
-      }
-
+      // Balance is updated automatically by DB trigger (trg_update_account_balance)
       onSaved()
       onClose()
     } catch (err) {
