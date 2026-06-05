@@ -266,6 +266,25 @@ export async function parsePDFTransaction(base64Data: string): Promise<ParseResu
   }
 }
 
+export async function parseBankStatementImage(
+  base64Data: string,
+  mimeType: 'image/jpeg' | 'image/png'
+): Promise<ParseResult> {
+  try {
+    const model = getFlashModel()
+    const result = await withRetry(() => model.generateContent([
+      { text: buildBankStatementPrompt() },
+      { inlineData: { mimeType, data: base64Data } },
+    ]))
+    const text = result.response.text()
+    const { transactions, accountInfo } = parseBankStatementJSON(text)
+    return { success: true, transactions, source: 'pdf', accountInfo }
+  } catch (err) {
+    console.error('[parseBankStatementImage]', err)
+    return { success: false, transactions: [], source: 'pdf', error: String(err) }
+  }
+}
+
 // ─── Investment Statement Parser ─────────────────────────────
 
 function parseInvestmentJSON(text: string): { trades: ParsedStockTrade[]; statementInfo: InvestmentStatementInfo | null } {

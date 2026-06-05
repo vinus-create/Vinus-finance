@@ -4,6 +4,7 @@ import {
   parseTextTransaction,
   parseImageTransaction,
   parsePDFTransaction,
+  parseBankStatementImage,
   parseVoiceAudioTransaction,
   parseInvestmentStatement,
   type ParsedTransaction,
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // ─── PDF (bank statement / e-invoice) ────────────────────
+  // ─── PDF / Statement Image (bank statement) ──────────────
   else if (type === 'pdf') {
     const file = formData.get('file') as File | null
     if (!file) {
@@ -104,12 +105,15 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ success: false, error: 'File too large (max 20 MB)' }, { status: 413 })
     }
-    if (file.type !== 'application/pdf') {
-      return NextResponse.json({ success: false, error: 'File must be a PDF' }, { status: 400 })
-    }
     const arrayBuffer = await file.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString('base64')
-    parseResult = await parsePDFTransaction(base64)
+    if (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png') {
+      parseResult = await parseBankStatementImage(base64, file.type === 'image/png' ? 'image/png' : 'image/jpeg')
+    } else if (file.type === 'application/pdf') {
+      parseResult = await parsePDFTransaction(base64)
+    } else {
+      return NextResponse.json({ success: false, error: 'File must be a PDF or image (JPG/PNG)' }, { status: 400 })
+    }
   }
 
   // ─── Investment Statement (brokerage / unit trust PDF) ────

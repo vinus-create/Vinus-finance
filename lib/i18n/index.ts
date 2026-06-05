@@ -212,6 +212,7 @@ export interface Translations {
   parser_extracting: string
   parser_pdf_hint: string
   parser_pdf_select: string
+  parser_pdf_camera: string
   parser_pdf_max: string
   parser_pdf_err_type: string
   parser_pdf_err_size: string

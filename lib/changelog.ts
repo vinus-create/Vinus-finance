@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.054'
+export const APP_VERSION = '1.055'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.055',
+    date: '2026-06-05',
+    title: '对账单支持 JPG/PNG 图片上传（拍照/相册）',
+    changes: [
+      '📷 对账单上传新增拍照按钮（调用手机相机）',
+      '🖼️ 支持从相册上传 JPG/PNG 图片对账单',
+      '🤖 parseBankStatementImage — 用银行对账单 prompt 解析图片',
+      '🔌 /api/ingest PDF 路径自动路由图片到 parseBankStatementImage',
+      '🌐 i18n 更新：zh/en/ms 对账单上传文字',
+    ],
+  },
   {
     version: '1.054',
     date: '2026-06-05',

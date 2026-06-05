@@ -203,9 +203,10 @@ export const zh: Translations = {
   parser_extract: '🔍 提取交易',
   parser_extracting: '⏳ 提取对账单...',
   parser_pdf_hint: '对账单中的所有交易将自动提取',
-  parser_pdf_select: '选择银行对账单 (PDF)',
-  parser_pdf_max: '最大 20 MB',
-  parser_pdf_err_type: '请选择 PDF 文件',
+  parser_pdf_select: '选择文件 (PDF / 图片)',
+  parser_pdf_camera: '拍照',
+  parser_pdf_max: 'PDF、JPG、PNG · 最大 20 MB',
+  parser_pdf_err_type: '请选择 PDF 或图片文件（JPG / PNG）',
   parser_pdf_err_size: '文件太大（最大 20 MB）',
   // ── TransactionPreview ───────────────────────
   preview_detected: '笔交易已检测',

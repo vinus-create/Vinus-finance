@@ -203,9 +203,10 @@ export const en: Translations = {
   parser_extract: '🔍 Extract Transactions',
   parser_extracting: '⏳ Extracting statement...',
   parser_pdf_hint: 'All transactions in the statement will be extracted automatically',
-  parser_pdf_select: 'Select bank statement (PDF)',
-  parser_pdf_max: 'Max 20 MB',
-  parser_pdf_err_type: 'Please select a PDF file',
+  parser_pdf_select: 'Select file (PDF / Image)',
+  parser_pdf_camera: 'Take Photo',
+  parser_pdf_max: 'PDF, JPG, PNG · Max 20 MB',
+  parser_pdf_err_type: 'Please select a PDF or image file (JPG / PNG)',
   parser_pdf_err_size: 'File too large (max 20 MB)',
   // ── TransactionPreview ───────────────────────
   preview_detected: 'transactions detected',

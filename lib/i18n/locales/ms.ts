@@ -203,9 +203,10 @@ export const ms: Translations = {
   parser_extract: '🔍 Ekstrak Transaksi',
   parser_extracting: '⏳ Menganalisa penyata...',
   parser_pdf_hint: 'Semua transaksi dalam penyata akan diekstrak secara automatik',
-  parser_pdf_select: 'Pilih penyata bank (PDF)',
-  parser_pdf_max: 'Maks 20 MB',
-  parser_pdf_err_type: 'Sila pilih fail PDF',
+  parser_pdf_select: 'Pilih fail (PDF / Imej)',
+  parser_pdf_camera: 'Ambil Gambar',
+  parser_pdf_max: 'PDF, JPG, PNG · Maks 20 MB',
+  parser_pdf_err_type: 'Sila pilih fail PDF atau imej (JPG / PNG)',
   parser_pdf_err_size: 'Fail terlalu besar (maks 20 MB)',
   // ── TransactionPreview ───────────────────────
   preview_detected: 'transaksi dikesan',
