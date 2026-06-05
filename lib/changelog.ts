@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.059'
+export const APP_VERSION = '1.060'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.060',
+    date: '2026-06-05',
+    title: '修复编辑交易后余额 delta 重复计算',
+    changes: [
+      '🐛 TransactionRow.localTxn 在 sheet 关闭后同步 prop 更新，避免重复开启时用旧 amount 计算 delta',
+      '🔧 Public Bank 余额手动修正回 2998.28',
+    ],
+  },
   {
     version: '1.059',
     date: '2026-06-05',

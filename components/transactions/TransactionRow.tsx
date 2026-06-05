@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
@@ -33,6 +33,11 @@ export default function TransactionRow({ txn, lang }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [localTxn, setLocalTxn] = useState(txn)
+
+  // Keep localTxn in sync with prop (after router.refresh() updates server data)
+  useEffect(() => {
+    if (!editing) setLocalTxn(txn)
+  }, [txn, editing])
 
   const cat = localTxn.type === 'expense' && localTxn.expense_category
     ? EXPENSE_CATEGORY_MAP[localTxn.expense_category as ExpenseCategory]
