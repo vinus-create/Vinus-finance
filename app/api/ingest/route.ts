@@ -266,20 +266,8 @@ export async function POST(request: NextRequest) {
           .eq('id', matchedId)
       }
       detectedAccount = { id: matchedId, name: matchedName, institution: info.bank_name, last4, closing_balance: info.closing_balance, was_created: false }
-    } else {
-      const acctName = info.account_holder
-        ? `${info.bank_name} (${info.account_holder})`
-        : info.bank_name || 'Bank Account'
-      const { data: newAcct } = await supabase.from('accounts').insert({
-        user_id: user.id, name: acctName, account_type: 'bank',
-        institution: info.bank_name || null, account_number: last4 || null,
-        balance: info.closing_balance ?? 0, currency: info.currency || 'MYR',
-        is_active: true, include_in_net_worth: true,
-      }).select('id, name').single()
-      if (newAcct) {
-        detectedAccount = { id: newAcct.id, name: newAcct.name, institution: info.bank_name, last4, closing_balance: info.closing_balance, was_created: true }
-      }
     }
+    // No match found — do not auto-create; user selects account manually
   }
 
   // ─── Optional: save transactions to DB ────────────────────

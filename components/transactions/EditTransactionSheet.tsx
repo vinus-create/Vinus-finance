@@ -202,7 +202,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
               step="0.01"
               className="col-span-2 h-10 text-sm bg-background"
               value={amount}
-              onChange={e => setAmount(parseFloat(e.target.value) || 0)}
+              onChange={e => setAmount(Math.round((parseFloat(e.target.value) || 0) * 100) / 100)}
             />
           </div>
 

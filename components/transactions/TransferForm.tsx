@@ -172,7 +172,7 @@ export default function TransferForm({ onSaved }: Props) {
           step="0.01"
           placeholder="0.00"
           value={amount}
-          onChange={e => setAmount(e.target.value)}
+          onChange={e => { const m = e.target.value.match(/^\d*(\.\d{0,2})?/); setAmount(m ? m[0] : '') }}
           className="h-11 text-lg font-semibold"
           autoFocus
         />

@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.055'
+export const APP_VERSION = '1.056'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.056',
+    date: '2026-06-05',
+    title: '金额限两位小数 + 对账单不自动创建户口',
+    changes: [
+      '🔢 金额输入框限制最多两位小数（EditTransaction / TransactionPreview / TransferForm）',
+      '🚫 对账单解析找不到匹配户口时不再自动创建新户口',
+    ],
+  },
   {
     version: '1.055',
     date: '2026-06-05',

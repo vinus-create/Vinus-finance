@@ -263,7 +263,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                         value={txn.merchant_name || txn.description || ''}
                         onChange={e => update(i, { merchant_name: e.target.value, description: e.target.value })} />
                       <Input type="number" step="0.01" className="col-span-2 h-9 text-sm bg-background"
-                        value={txn.amount} onChange={e => update(i, { amount: parseFloat(e.target.value) || 0 })} />
+                        value={txn.amount} onChange={e => update(i, { amount: Math.round((parseFloat(e.target.value) || 0) * 100) / 100 })} />
                     </div>
 
                     <Input type="date" className="h-9 text-sm bg-background" value={txn.transaction_date}
