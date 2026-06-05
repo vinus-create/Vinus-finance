@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.061'
+export const APP_VERSION = '1.062'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.062',
+    date: '2026-06-05',
+    title: '真正修复编辑交易余额双重扣款',
+    changes: [
+      '🐛 修复 EditTransactionSheet 手动余额更新代码漏未提交，导致 Vercel 生产版本持续双重扣款',
+      '🔧 重写 DB trigger update_account_balance：同户口编辑改为单步原子更新，消除 is_active 条件依赖',
+    ],
+  },
   {
     version: '1.061',
     date: '2026-06-05',
