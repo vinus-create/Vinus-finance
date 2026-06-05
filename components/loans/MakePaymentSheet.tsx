@@ -95,10 +95,7 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
       })
       if (txnErr) throw new Error(txnErr.message)
 
-      // 1b. Deduct from selected account balance
-      const { data: acct } = await supabase.from('accounts').select('id, balance')
-        .eq('user_id', user.id).eq('name', selectedAccount).maybeSingle()
-      if (acct) await supabase.from('accounts').update({ balance: acct.balance - paymentAmt }).eq('id', acct.id)
+      // Balance is updated automatically by DB trigger (trg_update_account_balance)
 
       // 2. Update loan
       const { error: loanErr } = await supabase.from('loans').update({

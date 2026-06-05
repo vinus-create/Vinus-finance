@@ -147,11 +147,7 @@ function BillCard({ bill, onEdit, onDelete, deletingId }: {
       })
       if (txnErr) throw new Error(txnErr.message)
 
-      // Deduct from account balance
-      const { data: acct } = await supabase.from('accounts').select('id, balance')
-        .eq('user_id', user.id).eq('name', bill.auto_deduct_account).maybeSingle()
-      if (acct) await supabase.from('accounts').update({ balance: acct.balance - payAmount }).eq('id', acct.id)
-
+      // Balance is updated automatically by DB trigger (trg_update_account_balance)
       toast.success(`已从 ${bill.auto_deduct_account} 扣除 RM ${payAmount.toFixed(2)}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '扣款失败')

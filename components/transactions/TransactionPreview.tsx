@@ -150,23 +150,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
       const { error: insertError } = await supabase.from('transactions').insert(rows)
       if (insertError) throw new Error(insertError.message)
 
-      const deltaMap = new Map<string, number>()
-      for (const row of rows) {
-        if (row.type === 'transfer') {
-          deltaMap.set(row.account_name, (deltaMap.get(row.account_name) ?? 0) - row.amount)
-          if (row.to_account_name) deltaMap.set(row.to_account_name, (deltaMap.get(row.to_account_name) ?? 0) + row.amount)
-        } else {
-          const delta = row.type === 'income' ? row.amount : -row.amount
-          if (delta !== 0) deltaMap.set(row.account_name, (deltaMap.get(row.account_name) ?? 0) + delta)
-        }
-      }
-      for (const [accountName, delta] of deltaMap) {
-        const { data: acct } = await supabase
-          .from('accounts').select('id, balance')
-          .eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance + delta }).eq('id', acct.id)
-      }
-
+      // Balance is updated automatically by DB trigger (trg_update_account_balance)
       setShowCelebration(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.preview_error_save)

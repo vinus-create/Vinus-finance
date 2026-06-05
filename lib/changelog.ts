@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.060'
+export const APP_VERSION = '1.061'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.061',
+    date: '2026-06-05',
+    title: '修复余额双重更新 (v2)',
+    changes: [
+      '🐛 移除 TransactionPreview 手动更新余额代码，交由 DB trigger 处理',
+      '🐛 移除 BillsClient 手动扣除余额代码，交由 DB trigger 处理',
+      '🐛 移除 MakePaymentSheet 手动扣除余额代码，交由 DB trigger 处理',
+      '✅ 所有余额变更现统一由 trg_update_account_balance 触发器管理',
+    ],
+  },
   {
     version: '1.060',
     date: '2026-06-05',
