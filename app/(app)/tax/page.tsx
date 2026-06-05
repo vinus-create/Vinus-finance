@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import TaxReliefCard from '@/components/tax/TaxReliefCard'
@@ -13,9 +14,9 @@ interface Props {
 }
 
 export default async function TaxPage({ searchParams }: Props) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
   const { year: yearParam } = await searchParams

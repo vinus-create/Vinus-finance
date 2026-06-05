@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import LoanCard from '@/components/loans/LoanCard'
@@ -9,9 +10,9 @@ import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 
 export default async function LoansPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
 

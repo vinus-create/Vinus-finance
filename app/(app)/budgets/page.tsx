@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import BudgetsClient from '@/components/budgets/BudgetsClient'
@@ -7,9 +8,9 @@ import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
 
 export default async function BudgetsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t, lang } = await getServerTranslations()
 

@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import AccountsClient from '@/components/accounts/AccountsClient'
@@ -30,9 +31,9 @@ import type { Account } from '@/lib/types/app.types'
 //   FOR ALL USING (auth.uid() = user_id);
 
 export default async function AccountsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
 

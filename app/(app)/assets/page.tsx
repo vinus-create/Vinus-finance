@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getServerTranslations } from '@/lib/i18n/server'
@@ -6,9 +7,9 @@ import type { UserAsset } from '@/lib/types/app.types'
 import AssetsClient from './AssetsClient'
 
 export default async function AssetsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
 

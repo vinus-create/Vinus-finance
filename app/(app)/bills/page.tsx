@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PageHeader from '@/components/layout/PageHeader'
 import BillsClient from '@/components/bills/BillsClient'
 
 export default async function BillsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const [{ data: bills }, { data: loans }] = await Promise.all([
     supabase

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PageHeader from '@/components/layout/PageHeader'
@@ -12,9 +13,9 @@ import { getServerTranslations } from '@/lib/i18n/server'
 import { APP_VERSION } from '@/lib/changelog'
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
 

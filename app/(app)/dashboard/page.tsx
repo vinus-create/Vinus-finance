@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import BalanceSummaryCard from '@/components/dashboard/BalanceSummaryCard'
@@ -20,9 +21,9 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t, lang } = await getServerTranslations()
 

@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.052'
+export const APP_VERSION = '1.053'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.053',
+    date: '2026-06-05',
+    title: '性能优化：骨架屏 + 去重 auth 调用',
+    changes: [
+      '⚡ getCachedUser() — 用 React.cache() 去重 getUser()，每次页面切换省 ~200ms',
+      '💀 新增骨架屏 loading.tsx：Dashboard、交易、户口、账单、预算、贷款、提醒、股票',
+      '🔁 Tab 切换时立即显示骨架屏，不再看到空白',
+      '🛠️ PageSkeleton.tsx 可复用骨架组件库',
+    ],
+  },
   {
     version: '1.052',
     date: '2026-06-05',

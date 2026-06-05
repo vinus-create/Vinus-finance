@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getCachedUser } from '@/lib/supabase/get-user'
 import { redirect } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import StocksClient from '@/components/stocks/StocksClient'
@@ -55,9 +56,9 @@ import type { StockHolding, StockTrade, StockWatchlist } from '@/lib/types/app.t
 // CREATE POLICY "Users manage own watchlist" ON stock_watchlist FOR ALL USING (auth.uid() = user_id);
 
 export default async function StocksPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const { t } = await getServerTranslations()
 
