@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.056'
+export const APP_VERSION = '1.057'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.057',
+    date: '2026-06-05',
+    title: '确认交易页新增全局户口选择器',
+    changes: [
+      '🏦 一次过选择户口，自动应用到所有检测到的交易',
+      '✏️ 每笔交易仍可单独展开修改户口',
+    ],
+  },
   {
     version: '1.056',
     date: '2026-06-05',

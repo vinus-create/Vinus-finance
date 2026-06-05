@@ -51,6 +51,7 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
   const [globalLedger, setGlobalLedger] = useState<LedgerType>(() =>
     transactions.some(tx => tx.ledger === 'business') ? 'business' : 'personal'
   )
+  const [globalAccount, setGlobalAccount] = useState<string>(detectedAccount?.name ?? '')
   const { t, lang } = useLang()
 
   const loadAccounts = useCallback(async () => {
@@ -70,6 +71,12 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
 
   function update(idx: number, patch: Partial<ParsedTransaction>) {
     setEdited(prev => prev.map((txn, i) => i === idx ? { ...txn, ...patch } : txn))
+  }
+
+  function applyGlobalAccount(name: string) {
+    setGlobalAccount(name)
+    setEdited(prev => prev.map(txn => ({ ...txn, account_name: name })))
+    setShowCustomInput({})
   }
 
   function resolvedAccountName(idx: number): string {
@@ -212,6 +219,25 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
           ))}
         </div>
       </div>
+
+      {/* Global account picker */}
+      {accounts.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{t.preview_account_label}</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {accounts.map(acct => (
+              <button key={acct.id} onClick={() => applyGlobalAccount(acct.name)}
+                className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                  globalAccount === acct.name
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : 'border-border hover:bg-muted'}`}>
+                <span>{accountEmoji(acct.account_type)}</span>
+                <span>{acct.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground">{valid.length} {t.preview_detected}</p>
 
