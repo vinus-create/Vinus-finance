@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.058'
+export const APP_VERSION = '1.059'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.059',
+    date: '2026-06-05',
+    title: '修复股票页 FAB 按钮无反应',
+    changes: [
+      '🐛 修复投资组合/自选股页面 + 按钮点击无效问题（双重函数包装导致）',
+    ],
+  },
   {
     version: '1.058',
     date: '2026-06-05',

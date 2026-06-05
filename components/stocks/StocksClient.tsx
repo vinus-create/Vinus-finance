@@ -44,9 +44,9 @@ export default function StocksClient({ holdings, trades, watchlist }: Props) {
       return
     }
     if (tab === 'portfolio') {
-      setFabAction(() => () => { setEditHolding(undefined); setAddHoldingOpen(true) })
+      setFabAction(() => { setEditHolding(undefined); setAddHoldingOpen(true) })
     } else {
-      setFabAction(() => () => setAddWatchlistOpen(true))
+      setFabAction(() => setAddWatchlistOpen(true))
     }
     return () => setFabAction(null)
   }, [tab, setFabAction])
