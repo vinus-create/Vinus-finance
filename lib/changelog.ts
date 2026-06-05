@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.057'
+export const APP_VERSION = '1.058'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.058',
+    date: '2026-06-05',
+    title: '户口详情页 — 查看各户口交易记录',
+    changes: [
+      '🏦 点击户口卡片跳转到专属交易记录页',
+      '📋 按月份分组显示，含当月净额',
+      '✏️🗑️ 编辑/删除按钮不影响跳转',
+    ],
+  },
   {
     version: '1.057',
     date: '2026-06-05',

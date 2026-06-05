@@ -44,7 +44,10 @@ export default function AccountCard({ account, onEdit }: Props) {
   const isNegative = account.balance < 0
 
   return (
-    <div className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border">
+    <div
+      className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border active:bg-muted transition-colors cursor-pointer"
+      onClick={() => router.push(`/accounts/${account.id}`)}
+    >
       {/* Left: icon + info */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
@@ -76,7 +79,7 @@ export default function AccountCard({ account, onEdit }: Props) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1 ml-1">
+        <div className="flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
           <button
             onClick={onEdit}
             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
