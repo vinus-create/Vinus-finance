@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.064'
+export const APP_VERSION = '1.065'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.065',
+    date: '2026-06-06',
+    title: '修复 iOS 键盘弹出白屏',
+    changes: [
+      '🐛 viewport interactiveWidget=resizes-content，键盘开启时布局随之缩减，消除白色空白区',
+    ],
+  },
   {
     version: '1.064',
     date: '2026-06-06',
