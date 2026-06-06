@@ -118,8 +118,14 @@
 }
 
 /* ─── iOS Keyboard: prevent white gap below drawer ───────── */
-html, body {
-  height: 100%;
+:root {
+  --keyboard-height: 0px;
+}
+
+/* Shift vaul drawer up when iOS keyboard is open */
+[vaul-drawer][data-state="open"] {
+  padding-bottom: var(--keyboard-height) !important;
+  transition: padding-bottom 0.2s ease;
 }
 
 /* ─── iPhone / PWA Safe Area ──────────────────────────────── */

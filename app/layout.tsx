@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { LanguageProvider } from '@/lib/i18n/LanguageProvider'
 import PushNotificationManager from '@/components/PushNotificationManager'
+import IOSKeyboardFix from '@/components/IOSKeyboardFix'
 
 const geist = Geist({
   variable: '--font-geist-sans',
@@ -46,6 +47,7 @@ export default async function RootLayout({
     <html lang={lang} className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
         <LanguageProvider initialLang={lang} initialT={t}>
+          <IOSKeyboardFix />
           <PushNotificationManager />
           {children}
         </LanguageProvider>

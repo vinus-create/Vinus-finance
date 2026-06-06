@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.065'
+export const APP_VERSION = '1.066'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.066',
+    date: '2026-06-06',
+    title: '修复 iOS 键盘弹出白框 (JS方案)',
+    changes: [
+      '🐛 新增 IOSKeyboardFix 组件，用 visualViewport API 检测键盘高度',
+      '🔧 Drawer 通过 CSS var(--keyboard-height) 自动上移，消除白色空白',
+    ],
+  },
   {
     version: '1.065',
     date: '2026-06-06',
