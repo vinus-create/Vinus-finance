@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.062'
+export const APP_VERSION = '1.063'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.063',
+    date: '2026-06-06',
+    title: '修复 iOS 点击输入框自动放大',
+    changes: [
+      '🐛 viewport 加入 maximumScale=1，禁止 iOS Safari 点击 input 时自动 zoom',
+    ],
+  },
   {
     version: '1.062',
     date: '2026-06-05',
