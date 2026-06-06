@@ -130,12 +130,12 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
 
   return (
     <Drawer open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DrawerContent className="max-h-[90dvh] flex flex-col">
-        <DrawerHeader className="pb-2 shrink-0">
+      <DrawerContent>
+        <DrawerHeader className="pb-2">
           <DrawerTitle className="text-base">{t.edit_txn_title}</DrawerTitle>
         </DrawerHeader>
 
-        <div className="px-4 space-y-3 overflow-y-auto flex-1 min-h-0">
+        <div className="px-4 space-y-3 overflow-y-auto max-h-[55dvh]">
           {/* Type switcher */}
           <div className="grid grid-cols-3 gap-1.5">
             {(['expense', 'income', 'transfer'] as const).map(tp => (
