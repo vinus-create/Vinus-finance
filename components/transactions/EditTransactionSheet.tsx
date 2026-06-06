@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
@@ -129,13 +129,13 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
     : null
 
   return (
-    <Drawer open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DrawerContent>
-        <DrawerHeader className="pb-2">
-          <DrawerTitle className="text-base">{t.edit_txn_title}</DrawerTitle>
-        </DrawerHeader>
+    <Sheet open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[90dvh] overflow-y-auto" showCloseButton={false}>
+        <SheetHeader className="pb-2">
+          <SheetTitle className="text-base">{t.edit_txn_title}</SheetTitle>
+        </SheetHeader>
 
-        <div className="px-4 space-y-3 overflow-y-auto flex-1 min-h-0">
+        <div className="px-4 space-y-3">
           {/* Type switcher */}
           <div className="grid grid-cols-3 gap-1.5">
             {(['expense', 'income', 'transfer'] as const).map(tp => (
@@ -256,11 +256,9 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           </div>
 
           {error && <p className="text-xs text-red-500">{error}</p>}
-        </div>
 
-        {/* Sticky footer — always visible above keyboard */}
-        <div className="px-4 pb-3 pt-3 shrink-0 border-t border-border bg-background">
-          <div className="grid grid-cols-2 gap-2">
+          {/* Save / Cancel */}
+          <div className="grid grid-cols-2 gap-2 pt-1 pb-4">
             <Button variant="outline" onClick={onClose} disabled={saving}>{t.cancel}</Button>
             <Button
               className="bg-emerald-500 text-white hover:bg-emerald-600"
@@ -271,7 +269,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
             </Button>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   )
 }

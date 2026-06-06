@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.071'
+export const APP_VERSION = '1.072'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.072',
+    date: '2026-06-06',
+    title: '✅ 彻底修复编辑交易白框 — Drawer 换成 Sheet',
+    changes: [
+      '🎯 根本原因：vaul Drawer 内置键盘 JS 与 iOS Chrome 冲突，造成白框',
+      '✅ EditTransactionSheet 改用 Sheet (base-ui Dialog)，与确认交易页面一致',
+      '🔧 Sheet 用 fixed bottom:0 + overflow-y-auto，iOS 原生处理键盘位置，无白框',
+      '🧹 移除 sticky footer，按钮回归滚动内容区',
+    ],
+  },
   {
     version: '1.071',
     date: '2026-06-06',
