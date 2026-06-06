@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.066'
+export const APP_VERSION = '1.067'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.067',
+    date: '2026-06-06',
+    title: '真正修复 iOS 键盘白框 (正确 vaul 选择器)',
+    changes: [
+      '🐛 CSS 选择器从 [vaul-drawer] 改为正确的 [data-vaul-drawer]',
+      '🔧 padding-bottom: keyboard-height 让键盘遮住的是空白填充区，内容完整显示在键盘上方',
+    ],
+  },
   {
     version: '1.066',
     date: '2026-06-06',

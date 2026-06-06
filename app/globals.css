@@ -122,10 +122,15 @@
   --keyboard-height: 0px;
 }
 
-/* Shift vaul drawer up when iOS keyboard is open */
-[vaul-drawer][data-state="open"] {
+/*
+ * When iOS keyboard opens, it overlaps the bottom of the fixed drawer.
+ * Adding padding-bottom equal to keyboard height "sinks" the padding area
+ * under the keyboard, keeping the actual content fully visible above it.
+ * Selector confirmed from vaul v1 source: attribute is [data-vaul-drawer].
+ */
+[data-vaul-drawer] {
   padding-bottom: var(--keyboard-height) !important;
-  transition: padding-bottom 0.2s ease;
+  transition: padding-bottom 0.15s ease-out;
 }
 
 /* ─── iPhone / PWA Safe Area ──────────────────────────────── */
