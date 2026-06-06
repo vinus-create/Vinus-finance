@@ -5,17 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.068'
+export const APP_VERSION = '1.069'
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '1.068',
+    version: '1.069',
     date: '2026-06-06',
-    title: '修复 iOS 键盘白框 — 改用 translateY 上移 Drawer',
+    title: '彻底修复 iOS 键盘白框 — 撤销所有 transform hack',
     changes: [
-      '🐛 v1.067 用 padding-bottom 反而让白框更高，现已撤销',
-      '✅ 改用 transform: translateY(calc(-1 * var(--keyboard-height))) 直接上移 Drawer',
-      '🔧 translateY 移动 Drawer 位置而不改变其高度，彻底消除白色空白',
+      '🎯 找到真正原因：vaul 自身用 transform 做动画，我们的 translateY 与它冲突',
+      '🎯 iOS Chrome 配合 interactiveWidget 已自动把 Drawer 顶到键盘上方',
+      '🐛 多余的 translateY 把 Drawer 又往上推一段，露出 vaul 白色 ::after 伪元素=白框',
+      '✅ 移除所有 keyboard transform hack，交给浏览器原生处理',
+      '🧹 删除不再需要的 IOSKeyboardFix 组件',
     ],
   },
   {

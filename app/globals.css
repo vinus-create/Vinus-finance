@@ -117,23 +117,6 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* ─── iOS Keyboard: prevent white gap below drawer ───────── */
-:root {
-  --keyboard-height: 0px;
-}
-
-/*
- * When iOS keyboard opens, it overlaps the bottom of the fixed drawer.
- * We move the drawer UP by the keyboard height so content stays visible.
- * padding-bottom was wrong — it inflates drawer height creating white space.
- * transform: translateY moves the drawer body without changing its size.
- * Selector confirmed from vaul v1 source: attribute is [data-vaul-drawer].
- */
-[data-vaul-drawer] {
-  transform: translateY(calc(-1 * var(--keyboard-height))) !important;
-  transition: transform 0.15s ease-out;
-}
-
 /* ─── iPhone / PWA Safe Area ──────────────────────────────── */
 :root {
   --safe-top:    env(safe-area-inset-top, 0px);
