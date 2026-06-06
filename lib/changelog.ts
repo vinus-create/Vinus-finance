@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.070'
+export const APP_VERSION = '1.071'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.071',
+    date: '2026-06-06',
+    title: '修复编辑抽屉白框 — 滚动区改用 flex-1',
+    changes: [
+      '🐛 vaul 缩小 drawer 高度后，max-h-[55dvh] 固定值不跟着缩 → 内部出现空白',
+      '✅ 滚动区改为 flex-1 min-h-0，随 drawer 高度自动填充，彻底消除白框',
+      '🔧 底部 footer 减少多余 padding-bottom',
+    ],
+  },
   {
     version: '1.070',
     date: '2026-06-06',
