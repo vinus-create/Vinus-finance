@@ -5,16 +5,26 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.069'
+export const APP_VERSION = '1.070'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.070',
+    date: '2026-06-06',
+    title: '✅ 真·修复 iOS 键盘白框 — 移除 interactiveWidget',
+    changes: [
+      '🎯 真正元凶：viewport 的 interactiveWidget:resizes-content',
+      '🔍 vaul 内置键盘处理依赖 window.innerHeight 在键盘弹出时保持不变',
+      '🐛 resizes-content 让 innerHeight 跟着键盘一起缩小 → vaul 算不出键盘高度 → Drawer 维持原高+bottom:0 → 大白框',
+      '✅ 移除该设置，恢复默认 resizes-visual，vaul 自动把 Drawer 缩放并顶到键盘上方',
+    ],
+  },
   {
     version: '1.069',
     date: '2026-06-06',
     title: '彻底修复 iOS 键盘白框 — 撤销所有 transform hack',
     changes: [
       '🎯 找到真正原因：vaul 自身用 transform 做动画，我们的 translateY 与它冲突',
-      '🎯 iOS Chrome 配合 interactiveWidget 已自动把 Drawer 顶到键盘上方',
       '🐛 多余的 translateY 把 Drawer 又往上推一段，露出 vaul 白色 ::after 伪元素=白框',
       '✅ 移除所有 keyboard transform hack，交给浏览器原生处理',
       '🧹 删除不再需要的 IOSKeyboardFix 组件',

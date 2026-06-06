@@ -32,7 +32,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   viewportFit: 'cover',
   themeColor: '#10b981',
-  interactiveWidget: 'resizes-content',
+  // NOTE: do NOT set interactiveWidget: 'resizes-content'.
+  // vaul's keyboard repositioning relies on window.innerHeight staying
+  // constant while visualViewport.height shrinks (default 'resizes-visual').
+  // 'resizes-content' shrinks both together → vaul can't detect the keyboard
+  // → drawer stays tall → big white gap above the keyboard.
 }
 
 export default async function RootLayout({
