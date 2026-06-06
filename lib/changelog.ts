@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.063'
+export const APP_VERSION = '1.064'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.064',
+    date: '2026-06-06',
+    title: '修复编辑交易 Save 按钮被键盘遮住',
+    changes: [
+      '🐛 EditTransactionSheet Save/Cancel 按钮改为 sticky footer，键盘弹起时始终可见',
+    ],
+  },
   {
     version: '1.063',
     date: '2026-06-06',
