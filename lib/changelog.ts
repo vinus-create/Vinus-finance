@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.067'
+export const APP_VERSION = '1.068'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.068',
+    date: '2026-06-06',
+    title: '修复 iOS 键盘白框 — 改用 translateY 上移 Drawer',
+    changes: [
+      '🐛 v1.067 用 padding-bottom 反而让白框更高，现已撤销',
+      '✅ 改用 transform: translateY(calc(-1 * var(--keyboard-height))) 直接上移 Drawer',
+      '🔧 translateY 移动 Drawer 位置而不改变其高度，彻底消除白色空白',
+    ],
+  },
   {
     version: '1.067',
     date: '2026-06-06',
