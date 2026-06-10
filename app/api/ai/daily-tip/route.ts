@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     ]
     const investor = FAMOUS_INVESTORS[Math.floor(Math.random() * FAMOUS_INVESTORS.length)]!
 
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await model.generateContent(
       `你是马来西亚个人理财助手 Vinus Finance。
 

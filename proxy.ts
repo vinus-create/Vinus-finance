@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram', '/api/pwa-icon']
+const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram', '/api/pwa-icon', '/api/admin', '/admin']
 // Auth-required but exempt from "redirect logged-in users away" rule
 const AUTH_EXEMPT = ['/onboarding']
 
@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages (but NOT onboarding)
   const isAuthExempt = AUTH_EXEMPT.some(p => pathname === p || pathname.startsWith(p + '/'))
-  if (isPublicPath(pathname) && isLoggedIn && !pathname.startsWith('/api/') && !isAuthExempt) {
+  if (isPublicPath(pathname) && isLoggedIn && !pathname.startsWith('/api/') && !isAuthExempt && !pathname.startsWith('/admin')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

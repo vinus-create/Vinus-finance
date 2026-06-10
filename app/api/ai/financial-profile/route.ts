@@ -126,7 +126,7 @@ ${savingsRate}% 的储蓄率是否健康？（理想目标：20-30%）给出具�
 语气要直接、诚实但鼓励，避免说废话，结合马来西亚本地实际情况。`
 
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'text/plain', temperature: 0.7 },

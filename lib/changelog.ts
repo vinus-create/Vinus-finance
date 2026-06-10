@@ -5,9 +5,24 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.072'
+export const APP_VERSION = '1.073'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.073',
+    date: '2026-06-10',
+    title: '🛡️ 管理员后台 — 监控、分析、访问控制、AI 模型切换',
+    changes: [
+      '🔐 管理员从同一登录页登录 (ADMIN / P@ssw0rd@123)，跳转至专属后台',
+      '📊 后台概览：用户数、活跃用户、本月新增、交易总量、MYR 总额图表',
+      '👥 用户管理：分页列表、搜索、暂停/恢复账号（同步 Supabase Auth）',
+      '📈 平台分析：用户增长、月度交易量、热门支出类别、最活跃用户',
+      '🤖 AI 模型切换：管理员可从后台实时切换 Standard/HQ Gemini 模型',
+      '🚫 被暂停用户访问 app 时显示"账号已暂停"页面',
+      '🔧 修复 proxy.ts 路由守卫：将 /api/admin 和 /admin 加入公开路径白名单',
+      '📊 修复功能采用率百分比：aiParseUsers 和 stockUsers 改为统计不重复用户数',
+    ],
+  },
   {
     version: '1.072',
     date: '2026-06-06',

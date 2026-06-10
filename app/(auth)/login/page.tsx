@@ -24,6 +24,23 @@ export default function LoginPage() {
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+
+    // Admin intercept — ADMIN username bypasses Supabase
+    if (email.trim().toUpperCase() === 'ADMIN') {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email.trim(), password }),
+      })
+      if (res.ok) {
+        router.push('/admin/dashboard')
+      } else {
+        toast.error('Invalid admin credentials')
+      }
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast.error(error.message)
@@ -70,7 +87,7 @@ export default function LoginPage() {
                 <Label htmlFor="email-pw">{t.auth_email}</Label>
                 <Input
                   id="email-pw"
-                  type="email"
+                  type="text"
                   placeholder="name@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

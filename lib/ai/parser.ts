@@ -200,7 +200,7 @@ function parseBankStatementJSON(text: string): {
 
 export async function parseTextTransaction(input: string): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent(buildTextPrompt(input)))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
@@ -216,7 +216,7 @@ export async function parseImageTransaction(
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' = 'image/jpeg'
 ): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent([
       { text: buildImagePrompt() },
       { inlineData: { mimeType, data: base64Data } },
@@ -236,7 +236,7 @@ export async function parseVoiceAudioTransaction(
   mimeType: string,
 ): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent([
       { text: buildVoiceAudioPrompt() },
       { inlineData: { mimeType, data: base64Data } },
@@ -252,7 +252,7 @@ export async function parseVoiceAudioTransaction(
 
 export async function parsePDFTransaction(base64Data: string): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent([
       { text: buildBankStatementPrompt() },
       { inlineData: { mimeType: 'application/pdf', data: base64Data } },
@@ -271,7 +271,7 @@ export async function parseBankStatementImage(
   mimeType: 'image/jpeg' | 'image/png'
 ): Promise<ParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent([
       { text: buildBankStatementPrompt() },
       { inlineData: { mimeType, data: base64Data } },
@@ -320,7 +320,7 @@ function parseInvestmentJSON(text: string): { trades: ParsedStockTrade[]; statem
 
 export async function parseInvestmentStatement(base64Data: string): Promise<InvestmentParseResult> {
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent([
       { text: buildInvestmentStatementPrompt() },
       { inlineData: { mimeType: 'application/pdf', data: base64Data } },

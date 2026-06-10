@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const topCategoryAmount = topEntry?.[1] ?? 0
 
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     // Override response mime type for plain text
     const genModel = model
     const prompt = buildWeeklyDigestPrompt(transactions, totalIncome, totalExpense, topCategory, topCategoryAmount)

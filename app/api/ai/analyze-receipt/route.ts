@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const { base64, mimeType } = await request.json()
     if (!base64) return NextResponse.json({ error: 'No image' }, { status: 400 })
 
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await model.generateContent([
       {
         inlineData: {

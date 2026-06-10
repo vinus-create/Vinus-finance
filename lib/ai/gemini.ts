@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai'
+import { getAppConfig } from '@/lib/admin/config'
 
 // Singleton Gemini client
 let _genAI: GoogleGenerativeAI | null = null
@@ -12,10 +13,11 @@ function getGenAI(): GoogleGenerativeAI {
   return _genAI
 }
 
-// gemini-2.5-flash-lite — fast, cheap, for text + PDF
-export function getFlashModel(): GenerativeModel {
+// Dynamic standard model — reads from app_config (60s cache), fallback to gemini-2.5-flash-lite
+export async function getFlashModel(): Promise<GenerativeModel> {
+  const model = await getAppConfig('ai_model_standard')
   return getGenAI().getGenerativeModel({
-    model: 'gemini-2.5-flash-lite',
+    model: model || 'gemini-2.5-flash-lite',
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: 0.1,
@@ -23,14 +25,14 @@ export function getFlashModel(): GenerativeModel {
   })
 }
 
-// gemini-2.5-flash — higher quality, for voice audio + receipt images
-// Better at handling accents, short clips, and noisy photos
-export function getFlashModelHQ(): GenerativeModel {
+// Dynamic HQ model — reads from app_config (60s cache), fallback to gemini-2.5-flash
+export async function getFlashModelHQ(): Promise<GenerativeModel> {
+  const model = await getAppConfig('ai_model_hq')
   return getGenAI().getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: model || 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-      temperature: 0.2, // Slightly higher for ambiguous speech/images
+      temperature: 0.2,
     },
   })
 }

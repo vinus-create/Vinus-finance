@@ -106,7 +106,7 @@ export async function POST() {
 结尾加一句激励语。语气要有趣、接地气，带一点马来西亚华人文化味道。`
 
   try {
-    const model = getFlashModel()
+    const model = await getFlashModel()
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'text/plain', temperature: 0.9 },
