@@ -9,11 +9,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   const supabase = await createClient()
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('onboarding_done, is_suspended')
     .eq('id', user.id)
     .single()
+
+  // If is_suspended column hasn't been added yet, the query above fails.
+  // Fall back to fetching only onboarding_done so the app still works.
+  let onboardingDone = profile?.onboarding_done
+  if (profileError) {
+    const { data: basic } = await supabase
+      .from('profiles')
+      .select('onboarding_done')
+      .eq('id', user.id)
+      .single()
+    onboardingDone = basic?.onboarding_done
+  }
 
   if (profile?.is_suspended) {
     return (
@@ -27,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     )
   }
 
-  if (!profile?.onboarding_done) {
+  if (!onboardingDone) {
     redirect('/onboarding')
   }
 

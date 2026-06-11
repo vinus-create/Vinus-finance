@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.073'
+export const APP_VERSION = '1.074'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.074',
+    date: '2026-06-11',
+    title: '🔧 紧急修复：用户鬼打墙卡在 onboarding 循环',
+    changes: [
+      '🐛 修复 (app)/layout.tsx：is_suspended 字段未迁移时查询失败导致 profile=null，触发无限 onboarding 重定向',
+      '✅ 改为先尝试完整查询，失败时回退至仅查询 onboarding_done，保证用户可正常进入 app',
+    ],
+  },
   {
     version: '1.073',
     date: '2026-06-10',
