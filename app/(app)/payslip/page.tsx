@@ -86,9 +86,7 @@ export default function PayslipPage() {
           account_name: accountName, transaction_date: txDate,
           ledger: 'personal', is_tax_deductible: false,
         })
-        // Update account balance
-        const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance + gross }).eq('id', acct.id)
+        // Balance handled by DB trigger trg_update_account_balance
       }
 
       // 2. EPF deduction
@@ -100,8 +98,6 @@ export default function PayslipPage() {
           account_name: accountName, transaction_date: txDate,
           ledger: 'personal', is_tax_deductible: false,
         })
-        const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance - epf.epfEmployee }).eq('id', acct.id)
       }
 
       // 3. Add EPF to KWSP-EPF holding
@@ -129,8 +125,6 @@ export default function PayslipPage() {
           account_name: accountName, transaction_date: txDate,
           ledger: 'personal', is_tax_deductible: false,
         })
-        const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance - epf.socsoEmployee }).eq('id', acct.id)
       }
 
       // 5. EIS
@@ -142,8 +136,6 @@ export default function PayslipPage() {
           account_name: accountName, transaction_date: txDate,
           ledger: 'personal', is_tax_deductible: false,
         })
-        const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance - epf.eisEmployee }).eq('id', acct.id)
       }
 
       // 6. PCB
@@ -155,8 +147,6 @@ export default function PayslipPage() {
           account_name: accountName, transaction_date: txDate,
           ledger: 'personal', is_tax_deductible: false,
         })
-        const { data: acct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', accountName).maybeSingle()
-        if (acct) await supabase.from('accounts').update({ balance: acct.balance - pcb.monthlyPcb }).eq('id', acct.id)
       }
 
       setSuccess(true)

@@ -75,13 +75,8 @@ export default function TransferForm({ onSaved }: Props) {
       })
       if (insertErr) throw new Error(insertErr.message)
 
-      // Update from account balance
-      const { data: fromAcct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', fromAccount).maybeSingle()
-      if (fromAcct) await supabase.from('accounts').update({ balance: fromAcct.balance - amt }).eq('id', fromAcct.id)
-
-      // Update to account balance
-      const { data: toAcct } = await supabase.from('accounts').select('id, balance').eq('user_id', user.id).eq('name', toAccount).maybeSingle()
-      if (toAcct) await supabase.from('accounts').update({ balance: toAcct.balance + amt }).eq('id', toAcct.id)
+      // Balances (from −, to +) are handled by DB trigger trg_update_account_balance
+      // (migration 001) — do not update them here or transfers double-count.
 
       onSaved()
     } catch (err) {

@@ -5,9 +5,26 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.074'
+export const APP_VERSION = '1.075'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.075',
+    date: '2026-06-12',
+    title: '🏗️ 极致自动化基建 Phase 1 — 数据库大迁移 + 余额双重扣款修复',
+    changes: [
+      '🗄️ 新增 supabase/migrations/001_automation_foundation.sql（需在 Supabase SQL Editor 运行）',
+      '📦 import_batches 表：对账单导入批次追踪（文件 sha256 哈希防重复上传）',
+      '🔑 transactions.dedup_hash 生成列：交易指纹（防止重复记账的基础设施）',
+      '🏪 business_profiles 表：个人/生意双账本的商家档案（SSM 注册号等）',
+      '📉 loan_payments 表：贷款还款本金/利息拆分持久化（净资产实时追踪基础）',
+      '🏦 accounts 新增 auto_created + last_statement_date（对账单自动开户支持）',
+      '🔄 重写 DB trigger：转账（transfer）余额变动现由触发器统一处理（from −, to +）',
+      '🐛 修复 TransferForm 手动更新余额代码 → 移除，避免转账双重扣款',
+      '🐛 修复 payslip 月薪记录手动更新余额 → 移除（此前与 trigger 双重扣款）',
+      '📋 schema.sql 与线上数据库对齐：补齐 ledger/to_account_name/profiles 8 列 + 10 个 ad-hoc 表的正式定义',
+    ],
+  },
   {
     version: '1.074',
     date: '2026-06-11',
