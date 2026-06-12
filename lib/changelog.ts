@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.078'
+export const APP_VERSION = '1.079'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.079',
+    date: '2026-06-12',
+    title: '🎯 极致自动化 Phase 5 — 贷款本息自动拆分 + LHDN YA2025 减免自动挂钩',
+    changes: [
+      '📉 贷款自动识别：导入对账单中 loan_repayment 交易匹配活跃贷款（月供 ±5% 或名称匹配）→ 自动拆分本金/利息',
+      '🏦 loan_payments 摊销留痕：每笔还款记录本金/利息/剩余本金，贷款 outstanding_balance 自动递减（净资产实时更新）',
+      '🔁 transaction_id 唯一约束：重复导入绝不重复扣减贷款',
+      '💳 手动还款（MakePaymentSheet）同样写入 loan_payments 摊销记录',
+      '🧾 LHDN 减免自动挂钩：books→生活方式、gym→运动追加、education→自我进修、EPF→人寿+KWSP、SOCSO→PERKESO，自动按上限封顶入账 tax_reliefs',
+      '🤔 模糊类别（保险/医疗/电子产品/网络费）只生成建议不自动申报，避免错报',
+      '📅 税务数据更新至 YA2025：医疗保险减免 RM3,000→RM4,000、OKU 本人 RM6,000→RM7,000、OKU 子女 RM6,000→RM8,000、首房贷利息 RM7,000（≤RM500k，YA2025–2027）、父母医疗扩大至祖父母',
+    ],
+  },
   {
     version: '1.078',
     date: '2026-06-12',

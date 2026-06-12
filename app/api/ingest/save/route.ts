@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { computeDedupHash } from '@/lib/utils/dedup'
 import { matchTransfersAgainstDb, type DbTxnLite } from '@/lib/utils/transfer-match'
+import { detectAndRecordLoanPayments, type InsertedTxnLite } from '@/lib/utils/loan-payment-detect'
+import { autoLinkTaxReliefs } from '@/lib/utils/tax-autolink'
 import type { IngestSaveRequest, SaveTransactionRow } from '@/lib/types/ingest.types'
 
 // ─── POST /api/ingest/save ────────────────────────────────────
@@ -171,7 +173,9 @@ export async function POST(request: NextRequest) {
   }))
 
   const { data: inserted, error: insertError } = await supabase
-    .from('transactions').insert(insertRows).select('id')
+    .from('transactions')
+    .insert(insertRows)
+    .select('id, type, expense_category, amount, transaction_date, description, merchant_name, is_tax_deductible')
 
   if (insertError) {
     if (body.batchId) {
@@ -215,5 +219,41 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, insertedIds, skippedDuplicates, mergedTransfers, createdAccounts })
+  // 7. Loan installments → amortization split (principal/interest), loan
+  //    balance decremented; idempotent via loan_payments.transaction_id UNIQUE
+  let loanPaymentsRecorded = 0
+  try {
+    loanPaymentsRecorded = await detectAndRecordLoanPayments(
+      supabase, user.id, (inserted ?? []) as InsertedTxnLite[],
+    )
+  } catch (e) {
+    console.error('[ingest/save] loan detection failed:', e)
+  }
+
+  // 8. LHDN relief auto-link: deductible expenses claimed against the right
+  //    relief category (capped at YA limit); ambiguous ones returned as suggestions
+  let taxLink = { linkedCount: 0, suggestions: [] as unknown[] }
+  try {
+    taxLink = await autoLinkTaxReliefs(supabase, user.id, (inserted ?? []).map(r => ({
+      id: r.id,
+      type: r.type,
+      expense_category: r.expense_category,
+      amount: Number(r.amount),
+      transaction_date: r.transaction_date,
+      is_tax_deductible: r.is_tax_deductible === true,
+    })))
+  } catch (e) {
+    console.error('[ingest/save] tax auto-link failed:', e)
+  }
+
+  return NextResponse.json({
+    success: true,
+    insertedIds,
+    skippedDuplicates,
+    mergedTransfers,
+    createdAccounts,
+    loanPaymentsRecorded,
+    taxLinked: taxLink.linkedCount,
+    taxSuggestions: taxLink.suggestions,
+  })
 }

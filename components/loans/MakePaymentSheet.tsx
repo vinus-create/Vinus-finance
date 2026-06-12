@@ -81,7 +81,7 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
       if (!user) throw new Error(t.err_session)
 
       // 1. Record transaction
-      const { error: txnErr } = await supabase.from('transactions').insert({
+      const { data: txnRow, error: txnErr } = await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'expense',
         amount: paymentAmt,
@@ -92,10 +92,23 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
         account_name: selectedAccount,
         transaction_date: date,
         is_tax_deductible: false,
-      })
+      }).select('id').single()
       if (txnErr) throw new Error(txnErr.message)
 
       // Balance is updated automatically by DB trigger (trg_update_account_balance)
+
+      // 1b. Persist the amortization split (principal vs interest)
+      await supabase.from('loan_payments').insert({
+        user_id: user.id,
+        loan_id: loan.id,
+        transaction_id: txnRow?.id ?? null,
+        payment_date: date,
+        amount: paymentAmt,
+        principal_component: split.principal,
+        interest_component: split.interest,
+        balance_after: newBalance,
+        is_extra_payment: Math.abs(paymentAmt - loan.monthly_payment) / loan.monthly_payment > 0.05,
+      })
 
       // 2. Update loan
       const { error: loanErr } = await supabase.from('loans').update({

@@ -1,5 +1,6 @@
-// ─── Malaysian Income Tax Calculator (YA 2024) ───────────────
+// ─── Malaysian Income Tax Calculator (YA 2025) ───────────────
 // Based on LHDN BE Form (employment income)
+// Updated 2026-06-12 per Belanjawan 2025 / LHDN YA2025 relief list.
 
 export interface TaxBracket {
   from: number
@@ -8,7 +9,7 @@ export interface TaxBracket {
   cumulative: number  // tax on income up to `from`
 }
 
-// YA 2024 progressive tax brackets
+// YA 2025 progressive tax brackets (unchanged from YA 2024)
 export const TAX_BRACKETS_2024: TaxBracket[] = [
   { from: 0,       to: 5_000,       rate: 0,    cumulative: 0 },
   { from: 5_000,   to: 20_000,      rate: 1,    cumulative: 0 },
@@ -30,7 +31,12 @@ export function calcIncomeTax(chargeableIncome: number): number {
   return Math.round((bracket.cumulative + taxInBracket) * 100) / 100
 }
 
-// ─── LHDN Tax Reliefs (YA 2024 BE Form) ──────────────────────
+// ─── LHDN Tax Reliefs (YA 2025 BE Form) ──────────────────────
+// YA2025 changes (Belanjawan 2025):
+//   medical_insurance 3,000 → 4,000 · disabled_self 6,000 → 7,000
+//   child_disabled 6,000 → 8,000 · housing_loan_interest → 7,000 (home ≤RM500k;
+//   RM5,000 for RM500k–750k, YA2025–2027) · parents medical now incl. grandparents
+//   · vaccination expanded to all MOH-approved vaccines
 
 export interface ReliefMeta {
   category: string
@@ -46,11 +52,11 @@ export const RELIEF_META: ReliefMeta[] = [
   // Insurance & EPF
   { category: 'life_insurance_epf',    label: 'Insurans Hayat + KWSP',          cap: 7_000,  description: 'Gabungan premium insurans hayat dan caruman KWSP', autoFromTxn: true },
   { category: 'epf_voluntary',         label: 'KWSP Sukarela (i-Saraan/i-Suri)',cap: 3_000,  description: 'Caruman sukarela ke KWSP', autoFromTxn: true },
-  { category: 'medical_insurance',     label: 'Insurans Perubatan & Pendidikan', cap: 3_000,  description: 'Premium insurans kesihatan/pendidikan', autoFromTxn: true },
+  { category: 'medical_insurance',     label: 'Insurans Perubatan & Pendidikan', cap: 4_000,  description: 'Premium insurans kesihatan/pendidikan (YA2025: naik ke RM4,000)', autoFromTxn: true },
   { category: 'private_retirement',    label: 'KWSP / PRS Sukarela',            cap: 3_000,  description: 'Skim Persaraan Swasta (PRS)', autoFromTxn: false },
   { category: 'socso_voluntary',       label: 'PERKESO Sukarela',               cap: 350,    description: 'Caruman PERKESO sukarela', autoFromTxn: true },
   // Medical
-  { category: 'medical_expenses',      label: 'Perubatan Ibu Bapa',             cap: 8_000,  description: 'Kos perubatan, rawatan, perawatan ibu bapa', autoFromTxn: false },
+  { category: 'medical_expenses',      label: 'Perubatan Ibu Bapa / Datuk Nenek', cap: 8_000,  description: 'Kos perubatan ibu bapa & datuk nenek (YA2025 diperluas)', autoFromTxn: false },
   { category: 'serious_illness',       label: 'Penyakit Serius / OKU Diri',     cap: 10_000, description: 'Kos rawatan penyakit serius / OKU diri/pasangan/anak', autoFromTxn: true },
   { category: 'mental_health',         label: 'Kesihatan Mental',               cap: 1_000,  description: 'Kos pemeriksaan/rawatan kesihatan mental', autoFromTxn: true },
   { category: 'vaccination',           label: 'Vaksinasi Diri & Keluarga',      cap: 1_000,  description: 'Kos vaksinasi (diri, pasangan, anak)', autoFromTxn: true },
@@ -66,13 +72,13 @@ export const RELIEF_META: ReliefMeta[] = [
   { category: 'spouse',                label: 'Pasangan',                       cap: 4_000,  description: 'Pelepasan untuk pasangan (tiada pendapatan)', autoFromTxn: false },
   { category: 'child_unmarried_18',    label: 'Anak Bawah 18 Tahun',            cap: 2_000,  description: 'Setiap anak yang tidak berkahwin bawah 18 tahun', autoFromTxn: false },
   { category: 'child_student',         label: 'Anak Pelajar IPT',               cap: 8_000,  description: 'Anak yang belajar di institusi pengajian tinggi', autoFromTxn: false },
-  { category: 'child_disabled',        label: 'Anak OKU',                       cap: 6_000,  description: 'Anak yang kurang upaya', autoFromTxn: false },
+  { category: 'child_disabled',        label: 'Anak OKU',                       cap: 8_000,  description: 'Anak yang kurang upaya (YA2025: naik ke RM8,000)', autoFromTxn: false },
   { category: 'breastfeeding',         label: 'Penyusuan Susu Ibu',             cap: 1_000,  description: 'Peralatan penyusuan (anak bawah 2 tahun)', autoFromTxn: false },
   { category: 'childcare_fees',        label: 'Yuran Pusat Jagaan / Tadika',    cap: 3_000,  description: 'Yuran pusat jagaan atau tadika berdaftar', autoFromTxn: false },
   // Housing & Zakat
-  { category: 'housing_loan_interest', label: 'Faedah Pinjaman Perumahan',      cap: 10_000, description: 'Faedah pinjaman rumah pertama (sewaan)', autoFromTxn: false },
+  { category: 'housing_loan_interest', label: 'Faedah Pinjaman Perumahan',      cap: 7_000,  description: 'Faedah pinjaman rumah pertama ≤RM500k (RM5,000 untuk RM500k–750k), YA2025–2027', autoFromTxn: true },
   { category: 'zakat_fitrah',          label: 'Zakat / Fitrah',                 cap: null,   description: 'Zakat dan fitrah (potongan penuh)', autoFromTxn: false },
-  { category: 'disabled_self',         label: 'OKU Diri Sendiri',               cap: 6_000,  description: 'Pelepasan tambahan untuk individu OKU', autoFromTxn: false },
+  { category: 'disabled_self',         label: 'OKU Diri Sendiri',               cap: 7_000,  description: 'Pelepasan tambahan untuk individu OKU (YA2025: naik ke RM7,000)', autoFromTxn: false },
 ]
 
 export const RELIEF_MAP = Object.fromEntries(RELIEF_META.map(r => [r.category, r]))
