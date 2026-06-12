@@ -17,6 +17,7 @@ import TransferForm from './TransferForm'
 import TransactionPreview from './TransactionPreview'
 import type { ParsedTransaction } from '@/lib/ai/parser'
 import type { DetectedAccount } from './PDFParser'
+import type { IngestMeta } from '@/lib/types/ingest.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import { useRouter } from 'next/navigation'
 
@@ -28,29 +29,33 @@ interface Props {
 export default function QuickAddSheet({ open, onOpenChange }: Props) {
   const [parsed, setParsed] = useState<ParsedTransaction[] | null>(null)
   const [detectedAccount, setDetectedAccount] = useState<DetectedAccount | null>(null)
+  const [ingestMeta, setIngestMeta] = useState<IngestMeta | null>(null)
   const { t } = useLang()
   const router = useRouter()
 
-  function handleParsed(transactions: ParsedTransaction[], acct?: DetectedAccount | null) {
+  function handleParsed(transactions: ParsedTransaction[], acct?: DetectedAccount | null, meta?: IngestMeta | null) {
     setParsed(transactions)
     setDetectedAccount(acct ?? null)
+    setIngestMeta(meta ?? null)
   }
 
   function handleDiscard() {
     setParsed(null)
     setDetectedAccount(null)
+    setIngestMeta(null)
   }
 
   function handleSaved() {
     setParsed(null)
     setDetectedAccount(null)
+    setIngestMeta(null)
     onOpenChange(false)
     router.refresh()
   }
 
   // Reset parsed state when sheet closes
   function handleOpenChange(next: boolean) {
-    if (!next) { setParsed(null); setDetectedAccount(null) }
+    if (!next) { setParsed(null); setDetectedAccount(null); setIngestMeta(null) }
     onOpenChange(next)
   }
 
@@ -71,6 +76,7 @@ export default function QuickAddSheet({ open, onOpenChange }: Props) {
           <TransactionPreview
             transactions={parsed}
             detectedAccount={detectedAccount}
+            ingestMeta={ingestMeta}
             onDiscard={handleDiscard}
             onSaved={handleSaved}
           />

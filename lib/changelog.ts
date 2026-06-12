@@ -5,9 +5,25 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.076'
+export const APP_VERSION = '1.077'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.077',
+    date: '2026-06-12',
+    title: '🛡️ 极致自动化 Phase 3 — 防重复记账 + 户口自动发现',
+    changes: [
+      '🔒 文件级防重：同一份对账单（sha256 相同）二次上传直接拦截（409）',
+      '🔑 交易级防重：日期+金额+户口+参考号指纹比对，重复交易自动跳过',
+      '🔁 「疑似重复」区块：无参考号的疑似重复默认跳过，点击可强制导入',
+      '🍜 第 N 次出现规则：同日两笔相同的 kopitiam 消费照常导入，重叠月份对账单不重复算',
+      '✨ 户口自动发现：首次上传 Maybank/TNG 对账单，AI 检测银行+尾号+结余，一键自动开户',
+      '📦 import_batches 全程记账：每次导入的总行数/新增/跳过/强制导入全部留痕',
+      '💾 新增 POST /api/ingest/save：预览确认后统一服务端入账（防双击重复保存）',
+      '🏦 结余同步改为入账后执行 + last_statement_date 防旧对账单覆盖新余额',
+      '⚠️ AI 置信度 <0.6 的交易显示警告标记，提醒核对',
+    ],
+  },
   {
     version: '1.076',
     date: '2026-06-12',

@@ -3,10 +3,11 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import type { ParsedTransaction } from '@/lib/ai/parser'
+import type { IngestMeta } from '@/lib/types/ingest.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 
 interface Props {
-  onParsed: (transactions: ParsedTransaction[]) => void
+  onParsed: (transactions: ParsedTransaction[], detectedAccount?: null, meta?: IngestMeta | null) => void
 }
 
 const VALID_MIME = ['image/jpeg', 'image/png', 'image/webp']
@@ -53,8 +54,16 @@ export default function ReceiptParser({ onParsed }: Props) {
       fd.set('file', file)
       const res = await fetch('/api/ingest', { method: 'POST', body: fd })
       const data = await res.json()
+      if (res.status === 409 && data.error === 'duplicate_file') {
+        throw new Error('⚠️ 这张收据已经导入过了（相同照片）。')
+      }
       if (!data.success) throw new Error(data.error ?? t.err_parse_failed)
-      onParsed(data.transactions)
+      onParsed(data.transactions, null, {
+        batchId: data.batchId ?? null,
+        duplicates: data.duplicates ?? [],
+        suspected: data.suspected ?? [],
+        candidateAccount: null,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : t.err_unknown)
     } finally {

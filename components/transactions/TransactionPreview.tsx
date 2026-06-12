@@ -9,6 +9,7 @@ import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categ
 import { cn } from '@/lib/utils'
 import type { ParsedTransaction } from '@/lib/ai/parser'
 import type { Account, LedgerType } from '@/lib/types/app.types'
+import type { IngestMeta, IngestSaveRequest, SaveTransactionRow } from '@/lib/types/ingest.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import type { LangCode } from '@/lib/i18n'
@@ -18,9 +19,12 @@ import type { DetectedAccount } from './PDFParser'
 interface Props {
   transactions: ParsedTransaction[]
   detectedAccount?: DetectedAccount | null
+  ingestMeta?: IngestMeta | null
   onDiscard: () => void
   onSaved: () => void
 }
+
+type SkippedRow = ParsedTransaction & { certain: boolean }
 
 function getTxnIcon(t: ParsedTransaction): string {
   if (t.type === 'expense' && t.expense_category) return EXPENSE_CATEGORY_MAP[t.expense_category]?.icon ?? '💸'
@@ -39,8 +43,13 @@ function accountEmoji(type: Account['account_type']): string {
   return map[type] ?? '🏦'
 }
 
-export default function TransactionPreview({ transactions, detectedAccount, onDiscard, onSaved }: Props) {
-  const [edited, setEdited] = useState<ParsedTransaction[]>(() => transactions.map(t => ({ ...t, to_account_name: t.to_account_name ?? null })))
+export default function TransactionPreview({ transactions, detectedAccount, ingestMeta, onDiscard, onSaved }: Props) {
+  const [edited, setEdited] = useState<SaveTransactionRow[]>(() => transactions.map(t => ({ ...t, to_account_name: t.to_account_name ?? null })))
+  const [skipped, setSkipped] = useState<SkippedRow[]>(() => [
+    ...(ingestMeta?.suspected ?? []).map(t => ({ ...t, certain: false })),
+    ...(ingestMeta?.duplicates ?? []).map(t => ({ ...t, certain: true })),
+  ])
+  const [createCandidate, setCreateCandidate] = useState(true)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
   const [customAccount, setCustomAccount] = useState<Record<number, string>>({})
   const [showCustomInput, setShowCustomInput] = useState<Record<number, boolean>>({})
@@ -108,49 +117,52 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
     return dateStr
   }
 
+  /** Pull a default-skipped (suspected duplicate) row back into the import list */
+  function includeSkipped(idx: number) {
+    const row = skipped[idx]
+    if (!row) return
+    setSkipped(prev => prev.filter((_, i) => i !== idx))
+    setEdited(prev => [...prev, { ...row, is_duplicate_override: true }])
+  }
+
   async function handleSave() {
     setSaving(true)
     setError(null)
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error(t.preview_error_session)
+      const candidate = (!detectedAccount && createCandidate) ? (ingestMeta?.candidateAccount ?? null) : null
 
-      const valid = edited.filter(txn => txn.amount > 0)
-      const existingNames = new Set(accounts.map(a => a.name.toLowerCase()))
+      const rows: SaveTransactionRow[] = edited
+        .filter(txn => txn.amount > 0)
+        .map(txn => ({
+          ...txn,
+          transaction_date: sanitizeDate(txn.transaction_date),
+          account_name: detectedAccount?.name || candidate?.suggested_name || txn.account_name || 'Cash',
+          to_account_name: txn.type === 'transfer' ? (txn.to_account_name ?? null) : null,
+          ledger: globalLedger,
+        }))
 
-      const newNames = [...new Set(valid.map(txn => txn.account_name))]
-        .filter(name => name && !existingNames.has(name.toLowerCase()))
+      const statementSync = detectedAccount
+        ? { account_name: detectedAccount.name, closing_balance: detectedAccount.closing_balance, statement_date: detectedAccount.statement_date ?? null }
+        : candidate
+        ? { account_name: candidate.suggested_name, closing_balance: candidate.closing_balance, statement_date: candidate.statement_date }
+        : null
 
-      for (const name of newNames) {
-        const typeGuess = name.toLowerCase().includes('cash') || name.toLowerCase().includes('现金') ? 'cash' : 'bank'
-        const { data: newAcct } = await supabase
-          .from('accounts')
-          .insert({ user_id: user.id, name, account_type: typeGuess, balance: 0, currency: 'MYR', is_active: true, include_in_net_worth: true })
-          .select('*').single()
-        if (newAcct) setAccounts(prev => [...prev, newAcct as Account])
+      const payload: IngestSaveRequest = {
+        batchId: ingestMeta?.batchId ?? null,
+        transactions: rows,
+        createAccount: candidate,
+        statementSync,
       }
 
-      const rows = valid.map(txn => ({
-        user_id: user.id,
-        type: txn.type,
-        amount: txn.amount,
-        currency: txn.currency,
-        expense_category: txn.expense_category,
-        income_category: txn.income_category,
-        description: txn.description || null,
-        merchant_name: txn.merchant_name || null,
-        transaction_date: sanitizeDate(txn.transaction_date),
-        account_name: detectedAccount?.name || txn.account_name,
-        to_account_name: txn.type === 'transfer' ? (txn.to_account_name ?? null) : null,
-        ledger: globalLedger,
-        is_tax_deductible: txn.is_tax_deductible,
-      }))
+      const res = await fetch('/api/ingest/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error ?? t.preview_error_save)
 
-      const { error: insertError } = await supabase.from('transactions').insert(rows)
-      if (insertError) throw new Error(insertError.message)
-
-      // Balance is updated automatically by DB trigger (trg_update_account_balance)
+      // Balances are applied by the DB trigger; closing balance synced server-side
       setShowCelebration(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.preview_error_save)
@@ -189,6 +201,29 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
             </p>
           </div>
         </div>
+      )}
+
+      {/* Account auto-discovery: offer to create the statement's account */}
+      {!detectedAccount && ingestMeta?.candidateAccount && (
+        <button
+          onClick={() => setCreateCandidate(v => !v)}
+          className={`w-full flex items-center gap-2 p-3 rounded-xl text-xs text-left transition-colors ${
+            createCandidate
+              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+              : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          <span className="text-base">{createCandidate ? '✅' : '⬜'}</span>
+          <div>
+            <p className="font-semibold">✨ 自动创建户口：{ingestMeta.candidateAccount.suggested_name}</p>
+            <p className="opacity-80">
+              {ingestMeta.candidateAccount.last4 && `••••${ingestMeta.candidateAccount.last4} · `}
+              {ingestMeta.candidateAccount.closing_balance !== null
+                ? `结余 RM ${ingestMeta.candidateAccount.closing_balance.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`
+                : '从对账单检测到新户口'}
+            </p>
+          </div>
+        </button>
       )}
 
       {/* Personal / Business ledger toggle */}
@@ -237,7 +272,11 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
                 <div className="p-3 flex items-start gap-2">
                   <span className="text-xl leading-none mt-0.5 shrink-0">{getTxnIcon(txn)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{txn.merchant_name || txn.description || t.txn_unnamed}</p>
+                    <p className="text-sm font-medium truncate">
+                      {txn.confidence < 0.6 && <span title="AI 解析置信度低，请核对" className="mr-1">⚠️</span>}
+                      {txn.is_duplicate_override && <span title="疑似重复 — 已强制导入" className="mr-1 text-amber-500">🔁</span>}
+                      {txn.merchant_name || txn.description || t.txn_unnamed}
+                    </p>
                     <p className="text-xs text-muted-foreground">{getTxnLabel(txn, t.preview_transfer, lang)} • {acctName || 'Cash'}</p>
                     <p className="text-xs text-muted-foreground">{txn.transaction_date}</p>
                   </div>
@@ -335,6 +374,30 @@ export default function TransactionPreview({ transactions, detectedAccount, onDi
           )
         })}
       </div>
+
+      {/* Skipped duplicates — default not imported, tap to override */}
+      {skipped.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-amber-600">
+            ⚠️ {skipped.length} 笔疑似重复（已自动跳过 — 点击可强制导入）
+          </p>
+          <div className="space-y-1.5 max-h-[22dvh] overflow-y-auto pr-0.5">
+            {skipped.map((txn, i) => (
+              <button key={i} onClick={() => includeSkipped(i)}
+                className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-muted/60 opacity-60 hover:opacity-100 text-left transition-opacity">
+                <span className="text-base shrink-0">{txn.certain ? '🔒' : '🔁'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate line-through">{txn.merchant_name || txn.description || t.txn_unnamed}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {txn.transaction_date} · {txn.certain ? `参考号相同 ${txn.reference_number ?? ''}` : '日期/金额/户口相同'}
+                  </p>
+                </div>
+                <span className="text-xs font-semibold shrink-0">RM {txn.amount.toFixed(2)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-xs text-red-500">{error}</p>}
 

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import type { ParsedTransaction } from '@/lib/ai/parser'
+import type { IngestMeta } from '@/lib/types/ingest.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 
 export interface DetectedAccount {
@@ -11,11 +12,12 @@ export interface DetectedAccount {
   institution: string
   last4: string
   closing_balance: number | null
+  statement_date?: string | null
   was_created: boolean
 }
 
 interface Props {
-  onParsed: (transactions: ParsedTransaction[], detectedAccount?: DetectedAccount | null) => void
+  onParsed: (transactions: ParsedTransaction[], detectedAccount?: DetectedAccount | null, meta?: IngestMeta | null) => void
 }
 
 const VALID_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
@@ -75,10 +77,18 @@ export default function PDFParser({ onParsed }: Props) {
       fd.set('file', file)
       const res = await fetch('/api/ingest', { method: 'POST', body: fd })
       const data = await res.json()
+      if (res.status === 409 && data.error === 'duplicate_file') {
+        throw new Error('⚠️ 这份对账单已经导入过了（文件内容相同）。如需重新导入请删除旧批次。')
+      }
       if (!data.success) throw new Error(data.error ?? t.err_parse_failed)
       const acct: DetectedAccount | null = data.detectedAccount ?? null
       setDetectedAccount(acct)
-      onParsed(data.transactions, acct)
+      onParsed(data.transactions, acct, {
+        batchId: data.batchId ?? null,
+        duplicates: data.duplicates ?? [],
+        suspected: data.suspected ?? [],
+        candidateAccount: data.candidateAccount ?? null,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : t.err_unknown)
     } finally {
