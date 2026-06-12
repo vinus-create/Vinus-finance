@@ -725,14 +725,50 @@ BEGIN
   );
 END $$;
 
+-- dedup_hash is a PLAIN column maintained by a BEFORE trigger, NOT a generated
+-- column: Postgres rejects generated columns here (42P17) because the
+-- enum→text cast on `type` is only STABLE, regardless of the function's
+-- declared volatility. A trigger has no immutability requirement.
+
+-- Clean up a half-applied earlier attempt (generated column), if any
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'transactions'
+      AND column_name = 'dedup_hash' AND is_generated = 'ALWAYS'
+  ) THEN
+    ALTER TABLE public.transactions DROP COLUMN dedup_hash;
+  END IF;
+END $$;
+
 ALTER TABLE public.transactions
-  ADD COLUMN IF NOT EXISTS dedup_hash TEXT
-  GENERATED ALWAYS AS (
-    public.fn_txn_dedup_hash(
-      user_id, account_name, transaction_date,
-      type::text, amount, reference_number, description
-    )
-  ) STORED;
+  ADD COLUMN IF NOT EXISTS dedup_hash TEXT;
+
+CREATE OR REPLACE FUNCTION public.set_txn_dedup_hash()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.dedup_hash := public.fn_txn_dedup_hash(
+    NEW.user_id, NEW.account_name, NEW.transaction_date,
+    NEW.type::text, NEW.amount, NEW.reference_number, NEW.description
+  );
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_set_dedup_hash ON public.transactions;
+CREATE TRIGGER trg_set_dedup_hash
+  BEFORE INSERT OR UPDATE ON public.transactions
+  FOR EACH ROW EXECUTE FUNCTION public.set_txn_dedup_hash();
+
+-- Backfill existing rows. User triggers are disabled during the backfill so
+-- the (old or new) balance trigger can't touch account balances here.
+ALTER TABLE public.transactions DISABLE TRIGGER USER;
+UPDATE public.transactions
+SET dedup_hash = public.fn_txn_dedup_hash(
+  user_id, account_name, transaction_date,
+  type::text, amount, reference_number, description
+)
+WHERE dedup_hash IS NULL;
+ALTER TABLE public.transactions ENABLE TRIGGER USER;
 
 -- Deliberately NOT unique: legitimate identical same-day transactions exist
 -- (two identical kopitiam orders). Enforcement is API-level with override.

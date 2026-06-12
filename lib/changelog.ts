@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.081'
+export const APP_VERSION = '1.082'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.082',
+    date: '2026-06-12',
+    title: '🩹 彻底修复 migration 001 42P17 — dedup_hash 改为触发器维护',
+    changes: [
+      '🐛 根因：生成列表达式中 enum→text 转换（type::text)本身只是 STABLE，与函数无关，生成列方案不可行',
+      '🔧 dedup_hash 改为普通列 + BEFORE INSERT/UPDATE 触发器维护（trg_set_dedup_hash），哈希配方不变',
+      '📦 迁移含历史数据回填（回填期间禁用用户触发器，余额不受影响）+ 清理半套用的旧生成列',
+    ],
+  },
   {
     version: '1.081',
     date: '2026-06-12',
