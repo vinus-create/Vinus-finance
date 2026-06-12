@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.079'
+export const APP_VERSION = '1.080'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.080',
+    date: '2026-06-12',
+    title: '🩹 兼容性保护：migration 001 未运行时保存交易自动降级',
+    changes: [
+      '🛡️ /api/ingest/save：若数据库缺少 import_batch_id/is_duplicate_override 列（migration 001 未运行），自动降级为旧字段插入，保存功能不中断',
+    ],
+  },
   {
     version: '1.079',
     date: '2026-06-12',

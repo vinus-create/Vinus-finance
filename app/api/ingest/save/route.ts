@@ -172,10 +172,22 @@ export async function POST(request: NextRequest) {
     is_duplicate_override: t.is_duplicate_override === true,
   }))
 
-  const { data: inserted, error: insertError } = await supabase
+  let { data: inserted, error: insertError } = await supabase
     .from('transactions')
     .insert(insertRows)
     .select('id, type, expense_category, amount, transaction_date, description, merchant_name, is_tax_deductible')
+
+  // Graceful degradation: if migration 001 hasn't been run yet the two new
+  // columns don't exist — retry without them so saving still works.
+  if (insertError && /column|schema cache/i.test(insertError.message)) {
+    const legacyRows = insertRows.map(({ import_batch_id: _b, is_duplicate_override: _o, ...rest }) => rest)
+    const retry = await supabase
+      .from('transactions')
+      .insert(legacyRows)
+      .select('id, type, expense_category, amount, transaction_date, description, merchant_name, is_tax_deductible')
+    inserted = retry.data
+    insertError = retry.error
+  }
 
   if (insertError) {
     if (body.batchId) {
