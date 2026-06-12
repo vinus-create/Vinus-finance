@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.080'
+export const APP_VERSION = '1.081'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.081',
+    date: '2026-06-12',
+    title: '🩹 修复 migration 001 执行失败（42P17 generation expression is not immutable）',
+    changes: [
+      '🐛 fn_txn_dedup_hash 改为 plpgsql：SQL 函数会被内联进生成列表达式导致 to_char 被判定非 immutable，plpgsql 不内联即可通过',
+    ],
+  },
   {
     version: '1.080',
     date: '2026-06-12',

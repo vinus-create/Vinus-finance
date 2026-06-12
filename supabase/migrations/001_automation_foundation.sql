@@ -276,6 +276,10 @@ CREATE INDEX IF NOT EXISTS idx_transactions_import_batch
 -- Recipe: md5( user_id | lower(account) | YYYY-MM-DD | type | amount(2dp) |
 --              ref-number OR whitespace-normalized lowercase description )
 
+-- NOTE: must be plpgsql, not sql — SQL functions get inlined into the
+-- generated-column expression and Postgres then rejects to_char() as
+-- non-immutable (42P17). plpgsql bodies are not inlined, so the declared
+-- IMMUTABLE volatility is honoured (and is correct for these fixed formats).
 CREATE OR REPLACE FUNCTION public.fn_txn_dedup_hash(
   p_user    UUID,
   p_account TEXT,
@@ -285,8 +289,9 @@ CREATE OR REPLACE FUNCTION public.fn_txn_dedup_hash(
   p_ref     TEXT,
   p_desc    TEXT
 ) RETURNS TEXT
-LANGUAGE sql IMMUTABLE AS $$
-  SELECT md5(
+LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+  RETURN md5(
     p_user::text || '|' ||
     lower(coalesce(p_account, '')) || '|' ||
     to_char(p_date, 'YYYY-MM-DD') || '|' ||
@@ -296,8 +301,8 @@ LANGUAGE sql IMMUTABLE AS $$
       nullif(trim(p_ref), ''),
       lower(regexp_replace(coalesce(p_desc, ''), '\s+', ' ', 'g'))
     )
-  )
-$$;
+  );
+END $$;
 
 ALTER TABLE public.transactions
   ADD COLUMN IF NOT EXISTS dedup_hash TEXT
