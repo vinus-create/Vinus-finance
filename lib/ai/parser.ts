@@ -12,6 +12,7 @@ export interface ParsedTransaction {
   income_category: IncomeCategory | null
   description: string
   merchant_name: string | null
+  reference_number: string | null   // bank ref / receipt no / order ID (dedup key)
   transaction_date: string
   account_name: string
   to_account_name?: string | null   // for internal transfers only
@@ -54,7 +55,10 @@ export interface StatementAccountInfo {
   bank_name: string
   account_number: string        // full account number as printed
   account_holder: string
+  account_type: 'bank' | 'ewallet' | 'credit_card'
   closing_balance: number | null
+  statement_period_start: string | null
+  statement_period_end: string | null
   statement_date: string
   currency: string
 }
@@ -134,6 +138,8 @@ function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
     || (type === 'income' && income_category !== null && BUSINESS_INCOME_CATEGORIES.has(income_category))
     ? 'business' : 'personal'
 
+  const refRaw = typeof raw.reference_number === 'string' ? raw.reference_number.trim() : ''
+
   return {
     type,
     amount,
@@ -142,8 +148,12 @@ function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
     income_category,
     description: typeof raw.description === 'string' ? raw.description.slice(0, 120) : '',
     merchant_name: typeof raw.merchant_name === 'string' ? raw.merchant_name : null,
+    reference_number: refRaw !== '' ? refRaw.slice(0, 64) : null,
     transaction_date: dateStr,
     account_name: typeof raw.account_name === 'string' ? raw.account_name : 'Cash',
+    to_account_name: type === 'transfer' && typeof raw.to_account_name === 'string' && raw.to_account_name.trim() !== ''
+      ? raw.to_account_name.trim()
+      : null,
     ledger: autoLedger,
     is_tax_deductible: raw.is_tax_deductible === true,
     confidence: typeof raw.confidence === 'number' ? raw.confidence : 0.7,
@@ -183,11 +193,17 @@ function parseBankStatementJSON(text: string): {
   const ai = parsed.account_info as Record<string, unknown> | undefined
   let accountInfo: StatementAccountInfo | null = null
   if (ai) {
+    const isoDate = (v: unknown): string | null =>
+      typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null
     accountInfo = {
       bank_name:       typeof ai.bank_name === 'string'       ? ai.bank_name.trim()       : '',
       account_number:  typeof ai.account_number === 'string'  ? ai.account_number.trim()  : '',
       account_holder:  typeof ai.account_holder === 'string'  ? ai.account_holder.trim()  : '',
+      account_type:    ai.account_type === 'ewallet' ? 'ewallet'
+                     : ai.account_type === 'credit_card' ? 'credit_card' : 'bank',
       closing_balance: typeof ai.closing_balance === 'number' ? ai.closing_balance        : null,
+      statement_period_start: isoDate(ai.statement_period_start),
+      statement_period_end:   isoDate(ai.statement_period_end),
       statement_date:  typeof ai.statement_date === 'string'  ? ai.statement_date         : '',
       currency:        typeof ai.currency === 'string'         ? ai.currency               : 'MYR',
     }
@@ -250,16 +266,68 @@ export async function parseVoiceAudioTransaction(
   }
 }
 
+// Long statements get split so Gemini never silently drops rows on big PDFs.
+const PDF_CHUNK_THRESHOLD = 8   // split when statement has more pages than this
+const PDF_CHUNK_SIZE = 6        // pages per Gemini call (no overlap)
+
+async function parsePDFSingle(
+  base64Data: string,
+  chunk?: { index: number; total: number },
+): Promise<{ transactions: ParsedTransaction[]; accountInfo: StatementAccountInfo | null }> {
+  const model = await getFlashModel()
+  const result = await withRetry(() => model.generateContent([
+    { text: buildBankStatementPrompt(chunk) },
+    { inlineData: { mimeType: 'application/pdf', data: base64Data } },
+  ]))
+  return parseBankStatementJSON(result.response.text())
+}
+
 export async function parsePDFTransaction(base64Data: string): Promise<ParseResult> {
   try {
-    const model = await getFlashModel()
-    const result = await withRetry(() => model.generateContent([
-      { text: buildBankStatementPrompt() },
-      { inlineData: { mimeType: 'application/pdf', data: base64Data } },
-    ]))
-    const text = result.response.text()
-    const { transactions, accountInfo } = parseBankStatementJSON(text)
-    return { success: true, transactions, source: 'pdf', accountInfo }
+    // Page count check — fall back to single-shot if pdf-lib can't read it
+    let pageCount = 0
+    let srcDoc: import('pdf-lib').PDFDocument | null = null
+    try {
+      const { PDFDocument } = await import('pdf-lib')
+      srcDoc = await PDFDocument.load(Buffer.from(base64Data, 'base64'), { ignoreEncryption: true })
+      pageCount = srcDoc.getPageCount()
+    } catch {
+      srcDoc = null
+    }
+
+    if (!srcDoc || pageCount <= PDF_CHUNK_THRESHOLD) {
+      const { transactions, accountInfo } = await parsePDFSingle(base64Data)
+      return { success: true, transactions, source: 'pdf', accountInfo }
+    }
+
+    // Chunked parse: split into PDF_CHUNK_SIZE-page sub-documents (zero overlap)
+    const { PDFDocument } = await import('pdf-lib')
+    const totalChunks = Math.ceil(pageCount / PDF_CHUNK_SIZE)
+    const allTransactions: ParsedTransaction[] = []
+    let accountInfo: StatementAccountInfo | null = null
+
+    for (let c = 0; c < totalChunks; c++) {
+      const start = c * PDF_CHUNK_SIZE
+      const pageIndices = Array.from(
+        { length: Math.min(PDF_CHUNK_SIZE, pageCount - start) },
+        (_, i) => start + i,
+      )
+      const sub = await PDFDocument.create()
+      const pages = await sub.copyPages(srcDoc, pageIndices)
+      pages.forEach(p => sub.addPage(p))
+      const subBase64 = Buffer.from(await sub.save()).toString('base64')
+
+      const part = await parsePDFSingle(subBase64, { index: c + 1, total: totalChunks })
+      allTransactions.push(...part.transactions)
+      // account_info comes from the chunk containing the statement header (usually #1)
+      if (!accountInfo?.bank_name && part.accountInfo?.bank_name) accountInfo = part.accountInfo
+      // closing balance is printed at the END of the statement — prefer later chunks
+      if (accountInfo && part.accountInfo?.closing_balance !== null && part.accountInfo?.closing_balance !== undefined) {
+        accountInfo.closing_balance = part.accountInfo.closing_balance
+      }
+    }
+
+    return { success: true, transactions: allTransactions, source: 'pdf', accountInfo }
   } catch (err) {
     console.error('[parsePDFTransaction]', err)
     return { success: false, transactions: [], source: 'pdf', error: String(err) }

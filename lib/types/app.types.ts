@@ -146,13 +146,59 @@ export interface Transaction {
   merchant_name: string | null
   reference_number: string | null
   account_name: string
+  to_account_name: string | null
   transaction_date: string
   ledger: LedgerType
   is_tax_deductible: boolean
   tax_relief_id: string | null
   receipt_url: string | null
+  import_batch_id: string | null
+  is_duplicate_override: boolean
+  dedup_hash: string | null
   created_at: string
   updated_at: string
+}
+
+// ─── Import batches (statement dedup + audit) — migration 001 ───
+export interface ImportBatch {
+  id: string
+  user_id: string
+  source_type: 'pdf' | 'image' | 'investment' | 'text' | 'voice'
+  file_name: string | null
+  file_hash: string | null
+  statement_period_start: string | null
+  statement_period_end: string | null
+  account_id: string | null
+  status: 'pending' | 'completed' | 'failed' | 'rejected_duplicate'
+  total_rows: number
+  inserted_rows: number
+  duplicate_rows: number
+  overridden_rows: number
+  created_at: string
+}
+
+export interface BusinessProfile {
+  id: string
+  user_id: string
+  business_name: string
+  ssm_number: string | null
+  business_type: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LoanPayment {
+  id: string
+  user_id: string
+  loan_id: string
+  transaction_id: string | null
+  payment_date: string
+  amount: number
+  principal_component: number
+  interest_component: number
+  balance_after: number
+  is_extra_payment: boolean
+  created_at: string
 }
 
 export interface Loan {

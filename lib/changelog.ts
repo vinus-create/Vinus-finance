@@ -5,9 +5,25 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.075'
+export const APP_VERSION = '1.076'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.076',
+    date: '2026-06-12',
+    title: '🧠 极致自动化 Phase 2 — AI 解析大升级（电子钱包/商家账本/长PDF分页）',
+    changes: [
+      '💳 TNG/GrabPay/ShopeePay/Boost 充值（Reload）→ 正确识别为「转账」而非支出，不再虚增消费',
+      '📈 TNG GO+ 每日收益 → 股息收入；RFID/过路费 → tol；eBelia 政府补贴 → government_aid',
+      '🔢 新增 reference_number 提取：银行参考号/订单号写入独立栏位（去重指纹基础）',
+      '🏪 Shopee/TikTok/Lazada 卖家回款自动识别 → business_income + 生意账本（ledger=business）',
+      '🧾 Shopee/Grab 电子收据逐项解析：卖家名、商品明细、订单号、券后实付金额',
+      '📄 长 PDF 自动分页解析（pdf-lib）：>8 页对账单切成 6 页/段逐段解析，杜绝漏单',
+      '🗣️ 语音/文字 "tng"/"现金"/"mbb" 等口语账户名 → 自动匹配用户真实户口（lib/utils/account-alias.ts）',
+      '📋 对账单 account_info 新增 account_type/statement_period（自动开户基础）',
+      '🤖 投资对账单支持扩充：StashAway/Versa/ASNB/Maybank Trade + 股息统一处理',
+    ],
+  },
   {
     version: '1.075',
     date: '2026-06-12',
