@@ -11,6 +11,7 @@ import {
 } from '@/lib/ai/parser'
 import { computeDedupHash, sha256Hex } from '@/lib/utils/dedup'
 import { resolveAccountName, type AccountLite } from '@/lib/utils/account-alias'
+import { matchTransfersInBatch } from '@/lib/utils/transfer-match'
 import type { CandidateAccount } from '@/lib/types/ingest.types'
 
 // ─── POST /api/ingest ─────────────────────────────────────────
@@ -406,7 +407,8 @@ export async function POST(request: NextRequest) {
       supabase, user.id, parseResult.transactions,
       t => detectedAccount?.name || t.account_name,
     )
-    fresh = classified.fresh
+    // Collapse own-account movement pairs (e.g. bank debit + wallet reload credit)
+    fresh = matchTransfersInBatch(classified.fresh).rows
     duplicates = classified.duplicates
     suspected = classified.suspected
 

@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.077'
+export const APP_VERSION = '1.078'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.078',
+    date: '2026-06-12',
+    title: '🔄 极致自动化 Phase 4 — 转账智能配对（现金流不再虚增）',
+    changes: [
+      '🔗 批内配对：同次导入中「支出 + 收入」金额相同、≤2 天、不同户口 → 自动合并为一笔转账',
+      '🪞 双边对账单去重：Maybank 和 TNG 各自报告同一笔 Reload → 只保留一条转账记录',
+      '📚 跨导入配对：本次导入的转出腿匹配到数周前已入账的转入腿 → 旧记录自动转为 transfer，余额由触发器自动修正',
+      '🛡️ 保守匹配规则：仅 transfer 特征交易参与配对（DuitNow/IBG/Reload/Topup 关键词或 other_income/other_expense 类别），杜绝误合并',
+      '📊 已核查全部统计页面：transfer 不计入任何收入/支出/现金流汇总',
+    ],
+  },
   {
     version: '1.077',
     date: '2026-06-12',

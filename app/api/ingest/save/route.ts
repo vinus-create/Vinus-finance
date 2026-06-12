@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { computeDedupHash } from '@/lib/utils/dedup'
+import { matchTransfersAgainstDb, type DbTxnLite } from '@/lib/utils/transfer-match'
 import type { IngestSaveRequest, SaveTransactionRow } from '@/lib/types/ingest.types'
 
 // ─── POST /api/ingest/save ────────────────────────────────────
@@ -108,17 +109,49 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  if (toInsert.length === 0) {
+  // 3b. Cross-import transfer matching: an incoming leg may pair with a row
+  //     imported earlier from the other account's statement. The existing row
+  //     becomes the transfer (trigger re-balances), the incoming leg is dropped.
+  let mergedTransfers = 0
+  let finalRows: SaveTransactionRow[] = toInsert
+  {
+    const dates = toInsert.map(t => t.transaction_date).filter(Boolean).sort()
+    if (dates.length > 0) {
+      const from = new Date(new Date(dates[0]).getTime() - 7 * 86_400_000).toISOString().slice(0, 10)
+      const to = new Date(new Date(dates[dates.length - 1]).getTime() + 7 * 86_400_000).toISOString().slice(0, 10)
+      const { data: recent } = await supabase
+        .from('transactions')
+        .select('id, type, amount, account_name, to_account_name, transaction_date, description, merchant_name, expense_category, income_category')
+        .eq('user_id', user.id)
+        .gte('transaction_date', from)
+        .lte('transaction_date', to)
+      const matched = matchTransfersAgainstDb(toInsert, (recent ?? []) as DbTxnLite[])
+      finalRows = matched.rows as SaveTransactionRow[]
+      mergedTransfers = matched.droppedCount
+      for (const c of matched.conversions) {
+        await supabase.from('transactions').update({
+          type: 'transfer',
+          expense_category: null,
+          income_category: null,
+          account_name: c.account_name,
+          to_account_name: c.to_account_name,
+          is_tax_deductible: false,
+        }).eq('id', c.id).eq('user_id', user.id)
+      }
+    }
+  }
+
+  if (finalRows.length === 0) {
     if (body.batchId) {
       await supabase.from('import_batches')
         .update({ status: 'completed', inserted_rows: 0, duplicate_rows: skippedDuplicates })
         .eq('id', body.batchId).eq('user_id', user.id)
     }
-    return NextResponse.json({ success: true, insertedIds: [], skippedDuplicates, createdAccounts })
+    return NextResponse.json({ success: true, insertedIds: [], skippedDuplicates, mergedTransfers, createdAccounts })
   }
 
   // 4. Insert — the DB trigger applies all balance effects (incl. transfers)
-  const insertRows = toInsert.map(t => ({
+  const insertRows = finalRows.map(t => ({
     user_id: user.id,
     type: t.type,
     amount: t.amount,
@@ -155,7 +188,7 @@ export async function POST(request: NextRequest) {
       status: 'completed',
       inserted_rows: insertedIds.length,
       duplicate_rows: skippedDuplicates,
-      overridden_rows: toInsert.filter(t => t.is_duplicate_override).length,
+      overridden_rows: finalRows.filter(t => t.is_duplicate_override).length,
     }).eq('id', body.batchId).eq('user_id', user.id)
   }
 
@@ -182,5 +215,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, insertedIds, skippedDuplicates, createdAccounts })
+  return NextResponse.json({ success: true, insertedIds, skippedDuplicates, mergedTransfers, createdAccounts })
 }
