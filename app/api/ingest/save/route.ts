@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
     merchant_name: t.merchant_name || null,
     reference_number: t.reference_number ?? null,
     transaction_date: t.transaction_date,
+    transaction_time: (t as { transaction_time?: string | null }).transaction_time ?? null,
     account_name: t.account_name || 'Cash',
     to_account_name: t.type === 'transfer' ? (t.to_account_name ?? null) : null,
     ledger: t.ledger === 'business' ? 'business' : 'personal',

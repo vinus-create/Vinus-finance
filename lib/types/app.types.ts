@@ -148,6 +148,7 @@ export interface Transaction {
   account_name: string
   to_account_name: string | null
   transaction_date: string
+  transaction_time: string | null
   ledger: LedgerType
   is_tax_deductible: boolean
   tax_relief_id: string | null

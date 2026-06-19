@@ -21,6 +21,7 @@ interface Txn {
   expense_category: string | null
   income_category: string | null
   transaction_date: string
+  transaction_time: string | null
   account_name: string
   ledger?: LedgerType
 }
@@ -43,6 +44,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
   const [amount, setAmount] = useState(txn.amount)
   const [description, setDescription] = useState(txn.merchant_name || txn.description || '')
   const [date, setDate] = useState(txn.transaction_date)
+  const [time, setTime] = useState(txn.transaction_time ?? '')
   const [accountName, setAccountName] = useState(txn.account_name)
   const [expenseCat, setExpenseCat] = useState<ExpenseCategory | null>(txn.expense_category as ExpenseCategory | null)
   const [incomeCat, setIncomeCat] = useState<IncomeCategory | null>(txn.income_category as IncomeCategory | null)
@@ -58,6 +60,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
     setAmount(txn.amount)
     setDescription(txn.merchant_name || txn.description || '')
     setDate(txn.transaction_date)
+    setTime(txn.transaction_time ?? '')
     setAccountName(txn.account_name)
     setLedger(txn.ledger ?? 'personal')
     setExpenseCat(txn.expense_category as ExpenseCategory | null)
@@ -105,6 +108,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
           expense_category: type === 'expense' ? expenseCat : null,
           income_category: type === 'income' ? incomeCat : null,
           transaction_date: date,
+          transaction_time: time || null,
           account_name: accountName,
           ledger,
         })
@@ -188,13 +192,22 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
             />
           </div>
 
-          {/* Date */}
-          <Input
-            type="date"
-            className="h-10 text-sm bg-background"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-          />
+          {/* Date + Time */}
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              className="h-10 text-sm bg-background"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+            />
+            <Input
+              type="time"
+              className="h-10 text-sm bg-background"
+              value={time}
+              onChange={e => setTime(e.target.value)}
+              placeholder="时间（选填）"
+            />
+          </div>
 
           {/* Category picker */}
           {type !== 'transfer' && (

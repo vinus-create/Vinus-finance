@@ -55,7 +55,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
   {
     const q = supabase
       .from('transactions')
-      .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name, ledger')
+      .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, transaction_time, account_name, ledger')
       .eq('user_id', user.id)
       .gte('transaction_date', startOfMonth)
       .lte('transaction_date', endOfMonth)
@@ -64,7 +64,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
     if (e1) {
       const { data: d2 } = await supabase
         .from('transactions')
-        .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name')
+        .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, transaction_time, account_name')
         .eq('user_id', user.id)
         .gte('transaction_date', startOfMonth)
         .lte('transaction_date', endOfMonth)

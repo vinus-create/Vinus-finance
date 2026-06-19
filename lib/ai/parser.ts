@@ -14,6 +14,7 @@ export interface ParsedTransaction {
   merchant_name: string | null
   reference_number: string | null   // bank ref / receipt no / order ID (dedup key)
   transaction_date: string
+  transaction_time: string | null   // HH:MM (24h) if available on statement, else null
   account_name: string
   to_account_name?: string | null   // for internal transfers only
   ledger: LedgerType

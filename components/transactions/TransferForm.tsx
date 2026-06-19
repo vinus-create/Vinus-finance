@@ -22,6 +22,7 @@ export default function TransferForm({ onSaved }: Props) {
   const [toAccount, setToAccount] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5))
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +69,7 @@ export default function TransferForm({ onSaved }: Props) {
         merchant_name: note.trim() || `${fromAccount} → ${toAccount}`,
         description: note.trim() || null,
         transaction_date: date,
+        transaction_time: time || null,
         account_name: fromAccount,
         to_account_name: toAccount,
         ledger: 'personal',
@@ -173,15 +175,26 @@ export default function TransferForm({ onSaved }: Props) {
         />
       </div>
 
-      {/* Date */}
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">日期</Label>
-        <Input
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          className="h-10"
-        />
+      {/* Date + Time */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">日期</Label>
+          <Input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            className="h-10"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">时间（选填）</Label>
+          <Input
+            type="time"
+            value={time}
+            onChange={e => setTime(e.target.value)}
+            className="h-10"
+          />
+        </div>
       </div>
 
       {/* Note */}

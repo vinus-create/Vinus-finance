@@ -20,6 +20,7 @@ interface Txn {
   expense_category: string | null
   income_category: string | null
   transaction_date: string
+  transaction_time: string | null
   account_name: string
   ledger?: LedgerType
 }
@@ -65,9 +66,14 @@ export default function TransactionRow({ txn, lang }: Props) {
               </span>
             )}
           </div>
-          {label && name !== label && (
-            <p className="text-xs text-muted-foreground truncate">{label}</p>
-          )}
+          <div className="flex items-center gap-2">
+            {label && name !== label && (
+              <p className="text-xs text-muted-foreground truncate">{label}</p>
+            )}
+            {localTxn.transaction_time && (
+              <p className="text-xs text-muted-foreground shrink-0">{localTxn.transaction_time.slice(0, 5)}</p>
+            )}
+          </div>
         </div>
         <p className={cn(
           'text-sm font-semibold shrink-0',

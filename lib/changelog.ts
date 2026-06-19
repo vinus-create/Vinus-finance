@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.082'
+export const APP_VERSION = '1.083'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.083',
+    date: '2026-06-19',
+    title: '🕐 交易记录时间支持',
+    changes: [
+      '✨ 交易表新增 transaction_time 字段（可选，HH:MM 格式）',
+      '📝 编辑表单及转账表单新增时间选择器（日期+时间并排）',
+      '🔍 交易列表显示时间（若已记录）',
+      '🤖 AI 解析支持提取对账单中的交易时间',
+    ],
+  },
   {
     version: '1.082',
     date: '2026-06-12',
