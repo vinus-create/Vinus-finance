@@ -3,15 +3,7 @@
 import { useState } from 'react'
 import { Bot, Check, Info } from 'lucide-react'
 import { toast } from 'sonner'
-
-const MODELS = [
-  { id: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite 3.1', desc: 'Newest lite. Fastest & cheapest, best for text/PDF parsing.' },
-  { id: 'gemini-flash-latest', label: 'Gemini Flash 3.1', desc: 'Newest Flash. Highest quality for voice audio & receipt images.' },
-  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', desc: 'Fastest & cheapest. Best for text/PDF parsing.' },
-  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'High quality. Best for voice audio & receipt images.' },
-  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', desc: 'Previous generation Flash model.' },
-  { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', desc: 'Older, very fast. Limited multimodal support.' },
-]
+import { MODELS } from '@/lib/constants/ai-models'
 
 interface Props { configs: Record<string, string> }
 

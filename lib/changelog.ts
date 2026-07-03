@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.085'
+export const APP_VERSION = '1.086'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.086',
+    date: '2026-07-03',
+    title: '🐛 修复新模型保存失败（"Failed to save config"）',
+    changes: [
+      '🔧 模型白名单与 UI 列表合并为单一来源 lib/constants/ai-models.ts，杜绝漂移',
+      '✅ Flash 3.1 / Flash Lite 3.1 现可正常保存',
+    ],
+  },
   {
     version: '1.085',
     date: '2026-07-03',
