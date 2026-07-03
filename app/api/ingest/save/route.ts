@@ -220,8 +220,11 @@ export async function POST(request: NextRequest) {
       .eq('name', s.account_name)
       .maybeSingle()
     if (acct) {
-      const newer = !acct.last_statement_date || !s.statement_date
-        || s.statement_date > acct.last_statement_date
+      // A statement with no readable date must NEVER override the balance —
+      // page screenshots often parse closing_balance as 0 with a null date,
+      // which zeroed real balances (2026-07-03 incident).
+      const newer = !!s.statement_date
+        && (!acct.last_statement_date || s.statement_date > acct.last_statement_date)
       if (newer) {
         await supabase.from('accounts').update({
           balance: s.closing_balance,

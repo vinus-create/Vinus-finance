@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.092'
+export const APP_VERSION = '1.093'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.093',
+    date: '2026-07-04',
+    title: '🚨 修复对账单截图把户口余额清零',
+    changes: [
+      '🐛 根因：逐页截图导入时，读不到结余的页面被解析成 closing_balance=0 + 无日期，同步逻辑把 null 日期当作"更新"直接覆盖余额',
+      '🔧 无日期的对账单永不覆盖余额（双重防线：prompt 也禁止 Gemini 编造 0 结余）',
+    ],
+  },
   {
     version: '1.092',
     date: '2026-07-04',

@@ -272,10 +272,10 @@ Return this exact structure:
     "account_number": string,   // Full account number as printed (e.g. "557120062001"); for e-wallets the registered phone number
     "account_holder": string,   // Name of account owner as printed
     "account_type": "bank" | "ewallet" | "credit_card",  // judge from the document
-    "closing_balance": number,  // The final/closing balance of the statement period (positive number)
+    "closing_balance": number | null,  // ONLY the explicitly printed final/closing/ending balance. null if not visible (e.g. a mid-statement page screenshot). NEVER output 0 unless the document literally prints 0.00 as the closing balance.
     "statement_period_start": string | null,  // First day covered, "YYYY-MM-DD"
     "statement_period_end": string | null,    // Last day covered, "YYYY-MM-DD"
-    "statement_date": string,   // Statement end date in YYYY-MM-DD format
+    "statement_date": string | null,   // Statement end date "YYYY-MM-DD". null if not printed — NEVER guess.
     "currency": "MYR"
   },
   "transactions": [
