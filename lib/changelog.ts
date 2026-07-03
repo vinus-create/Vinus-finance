@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.090'
+export const APP_VERSION = '1.091'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.091',
+    date: '2026-07-04',
+    title: '🐛 修复导入预览改户口后保存仍跑回自动检测户口',
+    changes: [
+      '🐛 根因：保存时 detectedAccount 强制覆盖每行户口，用户手选被丢弃',
+      '🔧 行内户口改为唯一真相：初始化为检测户口，之后保存绝不覆盖用户选择',
+      '🔧 对账单结余同步跟随用户选的户口（全局 chip 优先于自动检测）',
+      '🔧 户口匹配先按完整银行名（Maybank Islamic 不再错配到 Maybank），再退回首词',
+      '📝 绿条显示实际链接的户口名，不再显示对账单银行名造成误导',
+    ],
+  },
   {
     version: '1.090',
     date: '2026-07-03',

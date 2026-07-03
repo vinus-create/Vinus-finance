@@ -215,7 +215,7 @@ export default function PDFParser({ onParsed }: Props) {
               {detectedAccount.was_created ? '✨ New account created' : '✓ Linked to account'}
             </p>
             <p className="opacity-80">
-              {detectedAccount.institution || detectedAccount.name}
+              {detectedAccount.name}
               {detectedAccount.last4 && ` ••••${detectedAccount.last4}`}
               {detectedAccount.closing_balance !== null
                 ? ` · Balance: RM ${detectedAccount.closing_balance.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`

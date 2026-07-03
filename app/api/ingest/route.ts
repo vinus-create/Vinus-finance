@@ -373,11 +373,14 @@ export async function POST(request: NextRequest) {
       const byNum = accounts.find(a => (a as AccountLite & { account_number?: string | null }).account_number === last4)
       if (byNum) { matchedId = byNum.id; matchedName = byNum.name }
     }
-    if (!matchedId && bankShort) {
-      const needle = bankShort.toLowerCase()
-      const byBank = accounts.find(a => (a.institution ?? '').toLowerCase().includes(needle))
-        ?? accounts.find(a => a.name.toLowerCase().includes(needle))
-      if (byBank) { matchedId = byBank.id; matchedName = byBank.name }
+    // Full bank name first ("Maybank Islamic" must not match plain "Maybank"),
+    // then fall back to the first word.
+    if (!matchedId) {
+      for (const needle of [info.bank_name.toLowerCase(), bankShort.toLowerCase()].filter(Boolean)) {
+        const byBank = accounts.find(a => (a.institution ?? '').toLowerCase().includes(needle))
+          ?? accounts.find(a => a.name.toLowerCase().includes(needle))
+        if (byBank) { matchedId = byBank.id; matchedName = byBank.name; break }
+      }
     }
 
     if (matchedId && matchedName) {

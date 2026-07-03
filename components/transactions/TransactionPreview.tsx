@@ -44,7 +44,16 @@ function accountEmoji(type: Account['account_type']): string {
 }
 
 export default function TransactionPreview({ transactions, detectedAccount, ingestMeta, onDiscard, onSaved }: Props) {
-  const [edited, setEdited] = useState<SaveTransactionRow[]>(() => transactions.map(t => ({ ...t, to_account_name: t.to_account_name ?? null })))
+  // Rows start on the detected/candidate account; from then on the row value is
+  // the single source of truth — save() must never override a user's choice.
+  const [edited, setEdited] = useState<SaveTransactionRow[]>(() => {
+    const defaultAccount = detectedAccount?.name ?? ingestMeta?.candidateAccount?.suggested_name ?? null
+    return transactions.map(t => ({
+      ...t,
+      account_name: defaultAccount ?? t.account_name,
+      to_account_name: t.to_account_name ?? null,
+    }))
+  })
   const [skipped, setSkipped] = useState<SkippedRow[]>(() => [
     ...(ingestMeta?.suspected ?? []).map(t => ({ ...t, certain: false })),
     ...(ingestMeta?.duplicates ?? []).map(t => ({ ...t, certain: true })),
@@ -136,13 +145,15 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
         .map(txn => ({
           ...txn,
           transaction_date: sanitizeDate(txn.transaction_date),
-          account_name: detectedAccount?.name || candidate?.suggested_name || txn.account_name || 'Cash',
+          account_name: txn.account_name || candidate?.suggested_name || 'Cash',
           to_account_name: txn.type === 'transfer' ? (txn.to_account_name ?? null) : null,
           ledger: globalLedger,
         }))
 
+      // Closing balance belongs to whichever account the user says the statement is —
+      // the global chip choice wins over the auto-detected match.
       const statementSync = detectedAccount
-        ? { account_name: detectedAccount.name, closing_balance: detectedAccount.closing_balance, statement_date: detectedAccount.statement_date ?? null }
+        ? { account_name: globalAccount || detectedAccount.name, closing_balance: detectedAccount.closing_balance, statement_date: detectedAccount.statement_date ?? null }
         : candidate
         ? { account_name: candidate.suggested_name, closing_balance: candidate.closing_balance, statement_date: candidate.statement_date }
         : null
@@ -193,7 +204,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
               {detectedAccount.was_created ? '✨ New account created' : '✓ Linked to account'}
             </p>
             <p className="opacity-80">
-              {detectedAccount.institution || detectedAccount.name}
+              {detectedAccount.name}
               {detectedAccount.last4 && ` ••••${detectedAccount.last4}`}
               {detectedAccount.closing_balance !== null
                 ? ` · Balance: RM ${detectedAccount.closing_balance.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`
