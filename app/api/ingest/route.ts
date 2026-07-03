@@ -448,6 +448,7 @@ export async function POST(request: NextRequest) {
         merchant_name: t.merchant_name || null,
         reference_number: t.reference_number,
         transaction_date: t.transaction_date,
+        transaction_time: t.transaction_time ?? null,
         account_name: detectedAccount?.name || t.account_name,
         to_account_name: t.type === 'transfer' ? (t.to_account_name ?? null) : null,
         ledger: t.ledger,

@@ -60,6 +60,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
       .gte('transaction_date', startOfMonth)
       .lte('transaction_date', endOfMonth)
       .order('transaction_date', { ascending: false })
+      .order('transaction_time', { ascending: false, nullsFirst: false })
     const { data: d1, error: e1 } = await (ledgerFilter ? q.eq('ledger', ledgerFilter) : q)
     if (e1) {
       const { data: d2 } = await supabase
@@ -69,6 +70,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
         .gte('transaction_date', startOfMonth)
         .lte('transaction_date', endOfMonth)
         .order('transaction_date', { ascending: false })
+      .order('transaction_time', { ascending: false, nullsFirst: false })
       txns = (d2 ?? []).map(r => ({ ...r, ledger: 'personal' }))
     } else {
       txns = d1

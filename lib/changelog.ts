@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.088'
+export const APP_VERSION = '1.089'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.089',
+    date: '2026-07-03',
+    title: '🕐 AI 导入自动提取交易时间',
+    changes: [
+      '🤖 AI 解析(文字/语音/收据/对账单)现会提取交易时间，如 "1:47 PM" → 13:47；无时间则留空，绝不猜测',
+      '📋 交易列表同一天内按时间倒序排列',
+      '🔧 补上 legacy 即存路径漏传 transaction_time',
+    ],
+  },
   {
     version: '1.088',
     date: '2026-07-03',

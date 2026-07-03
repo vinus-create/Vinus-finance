@@ -14,6 +14,7 @@ Return a JSON object with EXACTLY these fields:
   "merchant_name": string | null (shop/company name if identifiable),
   "reference_number": string | null (transaction reference / receipt no / order ID as printed, e.g. "2603151247252980", "DuitNow Ref 123456". null if none),
   "transaction_date": "YYYY-MM-DD" (today if not specified),
+  "transaction_time": "HH:MM" 24-hour format | null (extract if the receipt/statement/message shows a time, e.g. "3:47 PM" → "15:47"; null if no time shown — NEVER guess),
   "account_name": "Cash" | "Maybank" | "CIMB" | "Public Bank" | "BSN" | "Touch n Go" | "GrabPay" | "Boost" | string,
   "to_account_name": string | null (ONLY for type "transfer": the receiving account/wallet, e.g. "Touch n Go". null otherwise),
   "ledger": "personal" | "business" (business = side-hustle/shop revenue & costs, see BUSINESS DETECTION),
