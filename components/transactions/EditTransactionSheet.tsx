@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { cn } from '@/lib/utils'
 import { useLang } from '@/lib/i18n/LanguageProvider'
@@ -116,12 +117,25 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
         .eq('user_id', user.id)
       if (updateError) throw new Error(updateError.message)
 
-      // Remember the user's category choice for this merchant — next import auto-applies it.
-      // Fire-and-forget: a failed memory write must not block the save.
+      // Category changed → propagate to the whole merchant:
+      // 1. remember the choice (future imports auto-apply it)
+      // 2. backfill ALL other transactions of this merchant to the new category
       if (type === 'expense' && expenseCat && expenseCat !== txn.expense_category && description.trim()) {
         import('@/lib/utils/merchant-memory').then(({ rememberUserChoice }) =>
           rememberUserChoice(supabase, user.id, description, expenseCat)
         ).catch(() => {})
+
+        const { data: synced } = await supabase
+          .from('transactions')
+          .update({ expense_category: expenseCat })
+          .eq('user_id', user.id)
+          .eq('type', 'expense')
+          .ilike('merchant_name', description.trim()) // case-insensitive exact match
+          .neq('id', txn.id)
+          .select('id')
+        if (synced && synced.length > 0) {
+          toast.success(`已同步 ${synced.length} 笔「${description.trim()}」交易为相同分类`)
+        }
       }
 
       // Balance is updated automatically by DB trigger (trg_update_account_balance)

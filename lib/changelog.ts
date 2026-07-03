@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.093'
+export const APP_VERSION = '1.094'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.094',
+    date: '2026-07-04',
+    title: '🔁 改分类自动同步同商家全部交易',
+    changes: [
+      '✨ 手动修改一笔交易的分类后，同商家的其他交易自动改为相同分类（如 Pinduoduo 全部变网购）',
+      '💬 同步完成显示提示：已同步 N 笔',
+      '🧠 配合商家记忆：以后导入同商家也默认该分类',
+    ],
+  },
   {
     version: '1.093',
     date: '2026-07-04',
