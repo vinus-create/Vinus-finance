@@ -5,9 +5,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.083'
+export const APP_VERSION = '1.084'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.084',
+    date: '2026-07-03',
+    title: '🤖 Admin 新增 Gemini Flash 3.1 模型选项',
+    changes: [
+      '✨ Admin 设置新增 Gemini Flash Lite 3.1 与 Flash 3.1 可选模型',
+    ],
+  },
   {
     version: '1.083',
     date: '2026-06-19',
