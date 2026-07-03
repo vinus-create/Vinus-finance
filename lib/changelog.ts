@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.086'
+export const APP_VERSION = '1.087'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.087',
+    date: '2026-07-03',
+    title: '✅ 固定真实模型 ID：Flash Lite 3.1 + Flash 3.5',
+    changes: [
+      '🔧 经 Google ListModels + generateContent 实测(HTTP 200)确认：gemini-3.1-flash-lite、gemini-3.5-flash',
+      '📝 「Flash 3.1」不存在(3.1 仅有 lite/image/tts)，非 lite 槽改用最新稳定 gemini-3.5-flash',
+    ],
+  },
   {
     version: '1.086',
     date: '2026-07-03',
