@@ -2,7 +2,6 @@ import type { LangCode } from '@/lib/i18n'
 
 // ─── Expense category labels ──────────────────────────────────
 const EXPENSE_LABEL: Record<string, Record<LangCode, string>> = {
-  mamak:             { en: 'Mamak',                    ms: 'Mamak',                    zh: '马来餐厅' },  // legacy — kept for old transactions
   restaurant:        { en: 'Eat',                      ms: 'Makan',                    zh: '吃' },
   grocery:           { en: 'Grocery',                  ms: 'Barang Dapur',             zh: '超市/杂货' },
   grab_food:         { en: 'GrabFood / Delivery',      ms: 'GrabFood / Delivery',      zh: '外卖/送餐' },

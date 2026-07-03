@@ -95,7 +95,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
 // ─── Validation & Sanitisation ────────────────────────────────
 
 const VALID_EXPENSE_CATEGORIES = new Set([
-  'mamak','restaurant','grocery','grab_food','coffee','tol','grab_transport','petrol',
+  'restaurant','grocery','grab_food','coffee','tol','grab_transport','petrol',
   'parking','lrt_mrt','touch_n_go','epf_kwsp','socso_perkeso','income_tax',
   'electricity_tnb','water_syabas','internet_telco','insurance','rent_mortgage',
   'shopee','lazada','clothing','electronics','medical','pharmacy','gym',
@@ -114,6 +114,9 @@ const BUSINESS_INCOME_CATEGORIES = new Set([
 ])
 
 function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {
+  // mamak retired 2026-07 — everything eats under 'restaurant' now
+  if (raw.expense_category === 'mamak') raw.expense_category = 'restaurant'
+
   const type = (['income','expense','transfer'].includes(raw.type as string)
     ? raw.type : 'expense') as TransactionType
 

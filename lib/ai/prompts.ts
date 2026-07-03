@@ -23,7 +23,7 @@ Return a JSON object with EXACTLY these fields:
 }
 
 EXPENSE CATEGORIES (use exact values):
-mamak, restaurant, grocery, grab_food, coffee, tol, grab_transport, petrol, parking, lrt_mrt,
+restaurant, grocery, grab_food, coffee, tol, grab_transport, petrol, parking, lrt_mrt,
 touch_n_go, epf_kwsp, socso_perkeso, income_tax, electricity_tnb, water_syabas, internet_telco,
 insurance, rent_mortgage, shopee, lazada, clothing, electronics, household, furniture,
 medical, pharmacy, gym, education, books, entertainment, travel, subscription,
@@ -50,7 +50,7 @@ CURRENCY PARSING:
 - Tol prices often use decimals: "RM1.60", "RM4.20"
 
 MALAYSIAN MERCHANT RECOGNITION:
-- "mamak", "nasi kandar", "roti canai", "teh tarik" → category: mamak
+- "mamak", "nasi kandar", "roti canai", "teh tarik" → category: restaurant
 - "PETRONAS", "Shell", "BHP", "Caltex", "petrol", "minyak" → category: petrol
 - "PLUS", "LDP", "SPRINT", "DUKE", "tol", "highway toll" → category: tol
 - "Grab", "GrabFood", "GrabCar", "Grab Bike" → grab_food or grab_transport
@@ -186,8 +186,8 @@ COMMON SHORTFORMS in Malaysian speech:
 - "shopee" / "lazada" / "tiktok shop" → e-commerce
 - "rm" / "ringgit" / "ringgit malaysia" → MYR
 - "sen" → cents (e.g. "lapan ringgit lima puluh sen" = RM 8.50)
-- "da chang" / "大肠" → Chinese sausage/intestine snack (category: food/mamak)
-- "tau foo fa" / "豆腐花" / "tofu pudding" → dessert drink (mamak/restaurant)
+- "da chang" / "大肠" → Chinese sausage/intestine snack (category: restaurant)
+- "tau foo fa" / "豆腐花" / "tofu pudding" → dessert drink (category: restaurant)
 - Numbers in Malay: satu=1, dua=2, tiga=3, empat=4, lima=5, enam=6, tujuh=7, lapan=8, sembilan=9, sepuluh=10, dua puluh=20, tiga puluh=30, empat puluh=40, lima puluh=50, seratus=100, seribu=1000
 - Numbers in Chinese: 一二三四五六七八九十百千万 + 块/令吉/ringgit
 

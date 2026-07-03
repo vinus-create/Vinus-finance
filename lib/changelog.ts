@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.094'
+export const APP_VERSION = '1.095'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.095',
+    date: '2026-07-04',
+    title: '🍽️ 「马来餐厅」全面并入「吃」',
+    changes: [
+      '🗑️ AI prompt 与解析器彻底移除 mamak 类别（mamak/nasi kandar 等一律归「吃」）',
+      '🔧 历史交易及商家记忆已全部迁移为「吃」',
+      '🛡️ 解析器兜底：AI 若仍返回 mamak 自动转为 restaurant',
+    ],
+  },
   {
     version: '1.094',
     date: '2026-07-04',
