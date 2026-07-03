@@ -28,9 +28,10 @@ interface Txn {
 interface Props {
   txn: Txn
   lang: LangCode
+  showDate?: boolean // account detail page groups by month, so rows must carry their date
 }
 
-export default function TransactionRow({ txn, lang }: Props) {
+export default function TransactionRow({ txn, lang, showDate }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [localTxn, setLocalTxn] = useState(txn)
@@ -70,8 +71,11 @@ export default function TransactionRow({ txn, lang }: Props) {
             {label && name !== label && (
               <p className="text-xs text-muted-foreground truncate">{label}</p>
             )}
-            {localTxn.transaction_time && (
-              <p className="text-xs text-muted-foreground shrink-0">{localTxn.transaction_time.slice(0, 5)}</p>
+            {(showDate || localTxn.transaction_time) && (
+              <p className="text-xs text-muted-foreground shrink-0">
+                {showDate && `${localTxn.transaction_date.slice(5).replace('-', '/')} `}
+                {localTxn.transaction_time?.slice(0, 5)}
+              </p>
             )}
           </div>
         </div>

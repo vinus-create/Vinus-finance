@@ -32,10 +32,11 @@ export default async function AccountDetailPage({ params }: Props) {
   // Fetch transactions by account_name
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, account_name, ledger')
+    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, transaction_time, account_name, ledger')
     .eq('user_id', user.id)
     .eq('account_name', account.name)
     .order('transaction_date', { ascending: false })
+    .order('transaction_time', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -106,6 +107,7 @@ export default async function AccountDetailPage({ params }: Props) {
                         key={txn.id as string}
                         txn={txn as unknown as Parameters<typeof TransactionRow>[0]['txn']}
                         lang={lang}
+                        showDate
                       />
                     ))}
                   </div>

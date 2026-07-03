@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.091'
+export const APP_VERSION = '1.092'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.092',
+    date: '2026-07-04',
+    title: '📅 户口详情页交易显示日期时间',
+    changes: [
+      '✨ 户口详情页每笔交易显示日期（MM/DD）及时间（若有）',
+      '📋 同日内按时间倒序排列',
+    ],
+  },
   {
     version: '1.091',
     date: '2026-07-04',
