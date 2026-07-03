@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.089'
+export const APP_VERSION = '1.090'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.090',
+    date: '2026-07-03',
+    title: '🔄 重复对账单可一键替换或删除旧批次',
+    changes: [
+      '✨ 上传已导入过的对账单时，不再只是报错——可选「替换（删除并重新导入）」或「仅删除旧批次」',
+      '🔧 新增 DELETE /api/ingest/batch/[id]：删除批次及其全部交易，余额由触发器自动回冲',
+      '📋 提示旧批次的导入日期与交易笔数',
+    ],
+  },
   {
     version: '1.089',
     date: '2026-07-03',

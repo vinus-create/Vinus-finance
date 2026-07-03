@@ -30,6 +30,7 @@ export default function PDFParser({ onParsed }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [detectedAccount, setDetectedAccount] = useState<DetectedAccount | null>(null)
+  const [dupBatch, setDupBatch] = useState<{ id: string; created_at: string; inserted_rows: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -63,14 +64,36 @@ export default function PDFParser({ onParsed }: Props) {
     setPreview(null)
     setError(null)
     setDetectedAccount(null)
+    setDupBatch(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
+  }
+
+  // Delete the previously imported batch (transactions + batch row, balances auto-reverse).
+  // After deletion the file gate no longer matches, so a plain re-parse proceeds.
+  async function deleteOldBatch(thenReparse: boolean) {
+    if (!dupBatch) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/ingest/batch/${dupBatch.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? '删除旧批次失败')
+      setDupBatch(null)
+      if (thenReparse) await handleParse()
+      else setError(`✅ 旧批次已删除（${data.deletedTransactions} 笔交易已移除），可重新提取。`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.err_unknown)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleParse() {
     if (!file) return
     setLoading(true)
     setError(null)
+    setDupBatch(null)
     try {
       const fd = new FormData()
       fd.set('type', 'pdf')
@@ -78,7 +101,8 @@ export default function PDFParser({ onParsed }: Props) {
       const res = await fetch('/api/ingest', { method: 'POST', body: fd })
       const data = await res.json()
       if (res.status === 409 && data.error === 'duplicate_file') {
-        throw new Error('⚠️ 这份对账单已经导入过了（文件内容相同）。如需重新导入请删除旧批次。')
+        setDupBatch(data.duplicateBatch ?? null)
+        throw new Error('⚠️ 这份对账单已经导入过了（文件内容相同）。')
       }
       if (!data.success) throw new Error(data.error ?? t.err_parse_failed)
       const acct: DetectedAccount | null = data.detectedAccount ?? null
@@ -202,6 +226,32 @@ export default function PDFParser({ onParsed }: Props) {
       )}
 
       {error && <p className="text-xs text-red-500">{error}</p>}
+
+      {/* Duplicate statement: offer replace / delete-old */}
+      {dupBatch && (
+        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 space-y-2">
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            旧批次导入于 {new Date(dupBatch.created_at).toLocaleDateString('zh-CN')}，共 {dupBatch.inserted_rows} 笔交易。
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              className="h-9 text-xs"
+              onClick={() => deleteOldBatch(false)}
+              disabled={loading}
+            >
+              🗑️ 仅删除旧批次
+            </Button>
+            <Button
+              className="h-9 text-xs bg-amber-500 text-white hover:bg-amber-600"
+              onClick={() => deleteOldBatch(true)}
+              disabled={loading}
+            >
+              🔄 替换（删除并重新导入）
+            </Button>
+          </div>
+        </div>
+      )}
 
       {file && (
         <Button
