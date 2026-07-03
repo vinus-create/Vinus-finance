@@ -5,9 +5,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.084'
+export const APP_VERSION = '1.085'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.085',
+    date: '2026-07-03',
+    title: '📊 Admin 新增 Gemini API 用量监控',
+    changes: [
+      '✨ Dashboard 新增 API 用量监控条：今日 / 本月调用数 + 14 天堆叠柱状图（标准/高清分层）',
+      '🔧 每次 Gemini 调用异步计数（零延迟），写入 api_usage 表',
+    ],
+  },
   {
     version: '1.084',
     date: '2026-07-03',

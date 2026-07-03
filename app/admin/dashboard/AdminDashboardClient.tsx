@@ -1,14 +1,15 @@
 'use client'
 
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { Users, TrendingUp, Calendar, Receipt, DollarSign, Bot, MessageCircle, TrendingDown } from 'lucide-react'
-import type { AdminStats } from '@/lib/admin/queries'
+import { Users, TrendingUp, Calendar, Receipt, DollarSign, Bot, MessageCircle, TrendingDown, Activity } from 'lucide-react'
+import type { AdminStats, ApiUsage } from '@/lib/admin/queries'
 
 interface Props {
   stats: AdminStats
   weeklyUsers: Array<{ week: string; count: number }>
   dailyTxns: Array<{ date: string; count: number }>
   configs: Record<string, string>
+  apiUsage: ApiUsage
 }
 
 function KpiCard({ title, value, sub, icon: Icon, color }: {
@@ -31,7 +32,7 @@ function KpiCard({ title, value, sub, icon: Icon, color }: {
   )
 }
 
-export default function AdminDashboardClient({ stats, weeklyUsers, dailyTxns, configs }: Props) {
+export default function AdminDashboardClient({ stats, weeklyUsers, dailyTxns, configs, apiUsage }: Props) {
   const aiPct = stats.totalUsers > 0 ? Math.round((stats.aiParseUsers / stats.totalUsers) * 100) : 0
   const tgPct = stats.totalUsers > 0 ? Math.round((stats.telegramUsers / stats.totalUsers) * 100) : 0
   const stockPct = stats.totalUsers > 0 ? Math.round((stats.stockUsers / stats.totalUsers) * 100) : 0
@@ -83,6 +84,39 @@ export default function AdminDashboardClient({ stats, weeklyUsers, dailyTxns, co
               <Bar dataKey="count" fill="#6366f1" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Gemini API usage monitor */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Activity className="w-4 h-4 text-violet-500" /> Gemini API Usage
+          </h3>
+          <div className="flex gap-4 text-right">
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Today</p>
+              <p className="text-lg font-bold text-slate-900">{apiUsage.today.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">This Month</p>
+              <p className="text-lg font-bold text-slate-900">{apiUsage.month.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={apiUsage.daily}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={v => v.slice(5)} interval={1} />
+            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+            <Tooltip labelFormatter={l => `Day ${l}`} />
+            <Bar dataKey="standard" name="Standard" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="hq" name="HQ" stackId="a" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+        <div className="flex gap-4 mt-2 text-xs text-slate-500">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-500" /> Standard (text/PDF)</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-violet-500" /> HQ (voice/images)</span>
         </div>
       </div>
 

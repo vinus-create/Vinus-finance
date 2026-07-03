@@ -330,6 +330,49 @@ export async function getTopUsers(): Promise<Array<{ id: string; full_name: stri
   }))
 }
 
+export interface ApiUsage {
+  today: number
+  month: number
+  daily: Array<{ day: string; standard: number; hq: number }>
+}
+
+export async function getApiUsage(): Promise<ApiUsage> {
+  const supabase = createAdminClient()
+  // KL "today" without toISOString() UTC shift
+  const kl = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayStr = `${kl.getFullYear()}-${pad(kl.getMonth() + 1)}-${pad(kl.getDate())}`
+  const monthPrefix = todayStr.slice(0, 7)
+
+  // 14-day bar window; table may not exist yet → degrade to zeros
+  const { data } = await supabase
+    .from('api_usage')
+    .select('day, tier, count')
+    .gte('day', `${monthPrefix}-01`)
+
+  const buckets = new Map<string, { standard: number; hq: number }>()
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(kl); d.setDate(kl.getDate() - i)
+    buckets.set(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, { standard: 0, hq: 0 })
+  }
+
+  let today = 0, month = 0
+  for (const row of data ?? []) {
+    const day = String(row.day).slice(0, 10)
+    const n = Number(row.count)
+    if (day.slice(0, 7) === monthPrefix) month += n
+    if (day === todayStr) today += n
+    const b = buckets.get(day)
+    if (b) { if (row.tier === 'hq') b.hq += n; else b.standard += n }
+  }
+
+  return {
+    today,
+    month,
+    daily: Array.from(buckets.entries()).map(([day, v]) => ({ day, ...v })),
+  }
+}
+
 export async function getUserGrowth(): Promise<Array<{ month: string; total: number }>> {
   const supabase = createAdminClient()
   const { data } = await supabase

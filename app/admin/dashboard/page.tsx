@@ -1,13 +1,14 @@
-import { getAdminStats, getNewUsersPerWeek, getDailyTransactions } from '@/lib/admin/queries'
+import { getAdminStats, getNewUsersPerWeek, getDailyTransactions, getApiUsage } from '@/lib/admin/queries'
 import { getAllAppConfigs } from '@/lib/admin/config'
 import AdminDashboardClient from './AdminDashboardClient'
 
 export default async function AdminDashboardPage() {
-  const [stats, weeklyUsers, dailyTxns, configs] = await Promise.all([
+  const [stats, weeklyUsers, dailyTxns, configs, apiUsage] = await Promise.all([
     getAdminStats(),
     getNewUsersPerWeek(),
     getDailyTransactions(),
     getAllAppConfigs(),
+    getApiUsage(),
   ])
 
   return (
@@ -21,6 +22,7 @@ export default async function AdminDashboardPage() {
         weeklyUsers={weeklyUsers}
         dailyTxns={dailyTxns}
         configs={configs}
+        apiUsage={apiUsage}
       />
     </div>
   )
