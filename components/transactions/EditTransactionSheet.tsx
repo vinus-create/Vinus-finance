@@ -116,6 +116,14 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
         .eq('user_id', user.id)
       if (updateError) throw new Error(updateError.message)
 
+      // Remember the user's category choice for this merchant — next import auto-applies it.
+      // Fire-and-forget: a failed memory write must not block the save.
+      if (type === 'expense' && expenseCat && expenseCat !== txn.expense_category && description.trim()) {
+        import('@/lib/utils/merchant-memory').then(({ rememberUserChoice }) =>
+          rememberUserChoice(supabase, user.id, description, expenseCat)
+        ).catch(() => {})
+      }
+
       // Balance is updated automatically by DB trigger (trg_update_account_balance)
       onSaved()
       onClose()

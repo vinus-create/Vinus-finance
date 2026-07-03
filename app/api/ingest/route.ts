@@ -12,6 +12,7 @@ import {
 import { computeDedupHash, sha256Hex } from '@/lib/utils/dedup'
 import { resolveAccountName, type AccountLite } from '@/lib/utils/account-alias'
 import { matchTransfersInBatch } from '@/lib/utils/transfer-match'
+import { enrichCategories } from '@/lib/utils/merchant-memory'
 import type { CandidateAccount } from '@/lib/types/ingest.types'
 
 // ─── POST /api/ingest ─────────────────────────────────────────
@@ -427,6 +428,9 @@ export async function POST(request: NextRequest) {
     }).select('id').single()
     batchId = batch?.id ?? null
   }
+
+  // ─── Merchant memory: patch other/null categories from learned mappings + Gemini ───
+  await enrichCategories(supabase, user.id, fresh)
 
   // ─── Optional: save transactions to DB (legacy immediate-save path) ───────
   let savedIds: string[] = []

@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.087'
+export const APP_VERSION = '1.088'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.088',
+    date: '2026-07-03',
+    title: '🧠 商家分类记忆 — 「其他」自动识别 + 学习用户选择',
+    changes: [
+      '✨ 导入时分类为「其他」的商家（如 Pinduoduo、Sin Nam Huat）自动用 AI 世界知识识别真实分类',
+      '🧠 识别结果存入 merchant_categories 记忆表，同商家下次导入零成本直接命中',
+      '👤 用户手动修改分类时自动记住选择（优先级最高，AI 永不覆盖）',
+      '🛡️ 记忆失败不影响导入流程（优雅降级）',
+    ],
+  },
   {
     version: '1.087',
     date: '2026-07-03',
