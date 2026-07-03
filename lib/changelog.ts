@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.095'
+export const APP_VERSION = '1.096'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.096',
+    date: '2026-07-04',
+    title: '📊 支出明细显示全部类别 + 修复 AI 建议显示原始 JSON',
+    changes: [
+      '✨ 主页支出明细不再只显示前 5 个类别，全部显示（按金额降序）',
+      '🐛 AI 今日理财建议偶尔输出原始 JSON：根因是全局模型强制 JSON 输出格式，prompt 说「不要 JSON」无效',
+      '🔧 新增纯文本模型变体供文案类功能使用；解析兜底同时处理 JSON 对象与数组',
+    ],
+  },
   {
     version: '1.095',
     date: '2026-07-04',

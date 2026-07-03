@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getFlashModel } from '@/lib/ai/gemini'
+import { getFlashModelText } from '@/lib/ai/gemini'
 
 export const maxDuration = 30
 
@@ -56,15 +56,18 @@ export async function GET(request: NextRequest) {
       let text = raw.trim()
       // Strip markdown code blocks
       text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim()
-      // If it looks like JSON, extract the text value
-      if (text.startsWith('{')) {
+      // If it looks like JSON (object OR array), extract the text values
+      if (text.startsWith('{') || text.startsWith('[')) {
         try {
-          const parsed = JSON.parse(text)
-          // Try common keys
-          text = parsed.tip ?? parsed.advice ?? parsed.message ?? parsed.content ?? text
+          let parsed: unknown = JSON.parse(text)
+          if (Array.isArray(parsed)) parsed = parsed[0] ?? {}
+          if (typeof parsed === 'string') return parsed.trim()
+          const o = parsed as Record<string, string>
+          const parts = [o.tip ?? o.advice ?? o.message ?? o.content, o.quote, o.connection].filter(Boolean)
+          if (parts.length) text = parts.join('\n\n')
         } catch {
           // Remove JSON-like wrapping manually
-          text = text.replace(/^\{\s*"[^"]+"\s*:\s*"/, '').replace(/"\s*\}$/, '').trim()
+          text = text.replace(/^\[?\s*\{\s*"[^"]+"\s*:\s*"/, '').replace(/"\s*\}\s*\]?$/, '').trim()
         }
       }
       return text
@@ -83,7 +86,7 @@ export async function GET(request: NextRequest) {
     ]
     const investor = FAMOUS_INVESTORS[Math.floor(Math.random() * FAMOUS_INVESTORS.length)]!
 
-    const model = await getFlashModel()
+    const model = await getFlashModelText()
     const result = await model.generateContent(
       `你是马来西亚个人理财助手 Vinus Finance。
 

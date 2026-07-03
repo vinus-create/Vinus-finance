@@ -82,7 +82,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const bizMargin = bizRevenue > 0 ? (bizProfit / bizRevenue) * 100 : 0
   const hasBizData = bizTxns.length > 0
 
-  // Top 5 expense categories
+  // All expense categories, biggest first
   const catSpend: Record<string, number> = {}
   for (const txn of txns ?? []) {
     if (txn.type === 'expense' && txn.expense_category) {
@@ -92,7 +92,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   }
   const topCategories = Object.entries(catSpend)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
     .map(([category, amount]) => ({ category: category as ExpenseCategory, amount }))
 
   const recent = txns?.slice(0, 5) ?? []

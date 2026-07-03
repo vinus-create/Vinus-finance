@@ -36,6 +36,17 @@ export async function getFlashModel(): Promise<GenerativeModel> {
   })
 }
 
+// Plain-text variant — for prose features (daily tip). The JSON-forced models
+// above ignore "不要 JSON" prompt instructions because responseMimeType wins.
+export async function getFlashModelText(): Promise<GenerativeModel> {
+  const model = await getAppConfig('ai_model_standard')
+  logApiCall('standard')
+  return getGenAI().getGenerativeModel({
+    model: model || 'gemini-2.5-flash-lite',
+    generationConfig: { temperature: 0.7 },
+  })
+}
+
 // Dynamic HQ model — reads from app_config (60s cache), fallback to gemini-2.5-flash
 export async function getFlashModelHQ(): Promise<GenerativeModel> {
   const model = await getAppConfig('ai_model_hq')
