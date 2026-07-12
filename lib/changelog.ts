@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.096'
+export const APP_VERSION = '1.097'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.097',
+    date: '2026-07-12',
+    title: '📊 AI 用量上报：接入统一 token/成本 Dashboard',
+    changes: [
+      '✨ 所有 Gemini 调用自动上报真实 token 用量到自建 AI 用量 Dashboard（跨项目统一看板）',
+      '🔧 三个模型工厂包一层 generateContent 拦截，读取 usageMetadata，after() 响应后发送，零延迟',
+      '🛡️ 未配置 USAGE_INGEST_URL/KEY 时完全不生效（localhost 开发不受影响），上报失败静默忽略',
+    ],
+  },
   {
     version: '1.096',
     date: '2026-07-04',
