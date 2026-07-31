@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
+import { useCustomCategories } from '@/lib/hooks/useCustomCategories'
+import { useBatchEdit } from '@/lib/contexts/BatchEditContext'
 import { cn } from '@/lib/utils'
 import DeleteTransactionButton from './DeleteTransactionButton'
 import EditTransactionSheet from './EditTransactionSheet'
@@ -41,22 +43,41 @@ export default function TransactionRow({ txn, lang, showDate }: Props) {
     if (!editing) setLocalTxn(txn)
   }, [txn, editing])
 
+  const customCats = useCustomCategories()
+  const batch = useBatchEdit()
+
+  const catValue = localTxn.type === 'expense' ? localTxn.expense_category : localTxn.income_category
   const cat = localTxn.type === 'expense' && localTxn.expense_category
     ? EXPENSE_CATEGORY_MAP[localTxn.expense_category as ExpenseCategory]
     : localTxn.income_category
     ? INCOME_CATEGORY_MAP[localTxn.income_category as IncomeCategory]
     : undefined
-  const icon = cat?.icon ?? (localTxn.type === 'income' ? '💰' : localTxn.type === 'transfer' ? '🔄' : '💸')
-  const catValue = localTxn.type === 'expense' ? localTxn.expense_category : localTxn.income_category
-  const label = catValue ? getCategoryLabel(catValue, localTxn.type, lang) : (localTxn.type === 'transfer' ? 'Transfer' : '')
+  const customMeta = !cat && catValue ? customCats.find(c => c.slug === catValue) : undefined
+  const icon = cat?.icon ?? customMeta?.icon ?? (localTxn.type === 'income' ? '💰' : localTxn.type === 'transfer' ? '🔄' : '💸')
+  const label = catValue
+    ? (cat ? getCategoryLabel(catValue, localTxn.type, lang) : (customMeta?.label ?? catValue))
+    : (localTxn.type === 'transfer' ? 'Transfer' : '')
   const name = localTxn.merchant_name ?? localTxn.description ?? label ?? 'Unnamed'
+
+  const isSelected = batch.active && batch.selected.has(localTxn.id)
 
   return (
     <>
       <div
-        className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border active:bg-muted transition-colors cursor-pointer"
-        onClick={() => setEditing(true)}
+        className={cn(
+          'flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer',
+          isSelected ? 'bg-emerald-50 border-emerald-400 dark:bg-emerald-950/30' : 'bg-card border-border active:bg-muted'
+        )}
+        onClick={() => batch.active ? batch.toggle(localTxn.id) : setEditing(true)}
       >
+        {batch.active && (
+          <span className={cn(
+            'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 text-[11px] font-bold',
+            isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-muted-foreground/40'
+          )}>
+            {isSelected && '✓'}
+          </span>
+        )}
         <span className="text-xl shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -85,9 +106,11 @@ export default function TransactionRow({ txn, lang, showDate }: Props) {
         )}>
           {localTxn.type === 'income' ? '+' : '−'}RM {Number(localTxn.amount).toFixed(2)}
         </p>
-        <div onClick={e => e.stopPropagation()}>
-          <DeleteTransactionButton id={localTxn.id} />
-        </div>
+        {!batch.active && (
+          <div onClick={e => e.stopPropagation()}>
+            <DeleteTransactionButton id={localTxn.id} />
+          </div>
+        )}
       </div>
 
       <EditTransactionSheet

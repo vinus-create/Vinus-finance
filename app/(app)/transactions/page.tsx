@@ -7,6 +7,8 @@ import PageHeader from '@/components/layout/PageHeader'
 import MonthNav from '@/components/transactions/MonthNav'
 import TransactionsController from '@/components/transactions/TransactionsController'
 import TransactionRow from '@/components/transactions/TransactionRow'
+import BatchEditToolbar from '@/components/transactions/BatchEditToolbar'
+import { BatchEditProvider } from '@/lib/contexts/BatchEditContext'
 import TransactionSearch from '@/components/transactions/TransactionSearch'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
@@ -180,7 +182,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
         <TransactionsController />
       </Suspense>
 
-      {/* Transaction list grouped by date */}
+      {/* Transaction list grouped by date — wrapped for batch-edit selection */}
+      <BatchEditProvider>
+      <BatchEditToolbar hasTxns={sortedDates.length > 0} />
       <div className="pb-2">
         {sortedDates.length === 0 ? (
           <EmptyState
@@ -213,6 +217,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           ))
         )}
       </div>
+      </BatchEditProvider>
     </div>
   )
 }

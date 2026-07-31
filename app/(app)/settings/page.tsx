@@ -9,6 +9,8 @@ import SignOutButton from './SignOutButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import NotificationSettings from './NotificationSettings'
 import EditProfileCard from './EditProfileCard'
+import CategoryManager from './CategoryManager'
+import RuleManager from './RuleManager'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { APP_VERSION } from '@/lib/changelog'
 
@@ -50,6 +52,24 @@ export default async function SettingsPage() {
               {t.settings_notifications}
             </p>
             <NotificationSettings />
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              🏷️ 自定义分类
+            </p>
+            <CategoryManager />
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-sm">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              ⚙️ 自动归类规则
+            </p>
+            <RuleManager />
           </CardContent>
         </Card>
 

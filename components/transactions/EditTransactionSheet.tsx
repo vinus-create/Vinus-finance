@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/lib/constants/categories'
+import { getCategoryLabel } from '@/lib/utils/category-i18n'
+import { useCustomCategories } from '@/lib/hooks/useCustomCategories'
 import { cn } from '@/lib/utils'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
@@ -40,7 +42,7 @@ function accountEmoji(type: Account['account_type']): string {
 }
 
 export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Props) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [type, setType] = useState<TransactionType>(txn.type)
   const [amount, setAmount] = useState(txn.amount)
   const [description, setDescription] = useState(txn.merchant_name || txn.description || '')
@@ -148,11 +150,16 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
     }
   }
 
-  const currentCatMeta = type === 'expense' && expenseCat
-    ? EXPENSE_CATEGORY_MAP[expenseCat]
-    : type === 'income' && incomeCat
-    ? INCOME_CATEGORY_MAP[incomeCat]
-    : null
+  // Built-in categories (localized) + the user's own custom ones
+  const customCats = useCustomCategories(type === 'income' ? 'income' : 'expense')
+  const catOptions = type === 'transfer' ? [] : [
+    ...(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map(c => ({
+      value: c.value as string, icon: c.icon, label: getCategoryLabel(c.value, type, lang),
+    })),
+    ...customCats.map(c => ({ value: c.slug, icon: c.icon, label: c.label })),
+  ]
+  const currentCatValue = type === 'expense' ? expenseCat : type === 'income' ? incomeCat : null
+  const currentCatMeta = catOptions.find(o => o.value === currentCatValue) ?? null
 
   return (
     <Sheet open={open} onOpenChange={v => { if (!v) onClose() }}>
@@ -245,23 +252,23 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
               </button>
               {showCatPicker && (
                 <div className="grid grid-cols-4 gap-1 max-h-52 overflow-y-auto p-1 bg-muted/30 rounded-lg">
-                  {(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map(cat => (
+                  {catOptions.map(opt => (
                     <button
-                      key={cat.value}
+                      key={opt.value}
                       onClick={() => {
-                        if (type === 'expense') setExpenseCat(cat.value as ExpenseCategory)
-                        else setIncomeCat(cat.value as IncomeCategory)
+                        if (type === 'expense') setExpenseCat(opt.value as ExpenseCategory)
+                        else setIncomeCat(opt.value as IncomeCategory)
                         setShowCatPicker(false)
                       }}
                       className={cn(
                         'flex flex-col items-center gap-0.5 p-1.5 rounded-lg text-[10px] transition-colors',
-                        (type === 'expense' ? expenseCat : incomeCat) === cat.value
+                        currentCatValue === opt.value
                           ? 'bg-emerald-500 text-white'
                           : 'bg-background hover:bg-muted'
                       )}
                     >
-                      <span className="text-xl">{cat.icon}</span>
-                      <span className="leading-tight text-center line-clamp-2">{cat.label}</span>
+                      <span className="text-xl">{opt.icon}</span>
+                      <span className="leading-tight text-center line-clamp-2">{opt.label}</span>
                     </button>
                   ))}
                 </div>

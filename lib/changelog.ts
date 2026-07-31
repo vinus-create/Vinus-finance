@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.097'
+export const APP_VERSION = '1.098'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.098',
+    date: '2026-07-12',
+    title: '🏷️ 分类三连：显示语言修复 + 批量编辑 + 自定义分类/规则',
+    changes: [
+      '🐛 编辑交易的分类选择器不再固定显示马来文，改为跟随 App 语言',
+      '✨ 交易记录页新增「批量编辑」：勾选多笔一次改分类或删除',
+      '✨ 设定页新增「自定义分类」：自建带图标的支出分类，全局选择器与列表通用',
+      '✨ 设定页新增「自动归类规则」：如含「GWP00」自动归为网购，导入时优先套用（早于商家记忆与 AI）',
+      '⚠️ 需在 Supabase 执行本版 SQL：expense_category 改为文本列 + 两张新表',
+    ],
+  },
   {
     version: '1.097',
     date: '2026-07-12',
