@@ -123,7 +123,7 @@ export default function EditTransactionSheet({ txn, open, onClose, onSaved }: Pr
       // 1. remember the choice (future imports auto-apply it)
       // 2. backfill ALL other transactions of this merchant to the new category
       if (type === 'expense' && expenseCat && expenseCat !== txn.expense_category && description.trim()) {
-        import('@/lib/utils/merchant-memory').then(({ rememberUserChoice }) =>
+        import('@/lib/utils/merchant-memory-client').then(({ rememberUserChoice }) =>
           rememberUserChoice(supabase, user.id, description, expenseCat)
         ).catch(() => {})
 

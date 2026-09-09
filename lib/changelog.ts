@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.099'
+export const APP_VERSION = '1.100'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.100',
+    date: '2026-09-09',
+    title: '🚨 修复生产部署自 v1.097 起持续失败',
+    changes: [
+      '🐛 根因：client 组件 EditTransactionSheet 经 merchant-memory 间接拉入 gemini.ts → usage-log.ts，后者用了服务端专用的 next/server `after`，Turbopack 打包 client bundle 时报错，Vercel 一直 build 失败',
+      '🔧 拆出 merchant-memory-client.ts 存放 client 安全的 rememberUserChoice，服务端 AI 部分不再进 client bundle',
+      '✨ 顺带修复：商家记忆原本只认内置分类，自定义分类既不会被记住也不会被套用；现在支持 custom_ 分类',
+      '⚠️ 教训：tsc 通过 ≠ 能部署，涉及 server/client 边界必须跑 npm run build',
+    ],
+  },
   {
     version: '1.099',
     date: '2026-09-09',

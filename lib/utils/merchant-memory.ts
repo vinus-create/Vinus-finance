@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { EXPENSE_CATEGORIES } from '@/lib/constants/categories'
+import { merchantKey, isValidCategorySlug } from './merchant-memory-client'
 import type { ParsedTransaction } from '@/lib/ai/parser'
 import type { ExpenseCategory } from '@/lib/types/app.types'
 
@@ -11,12 +12,6 @@ import type { ExpenseCategory } from '@/lib/types/app.types'
 // memory first, then one batched Gemini call for merchants never seen before.
 // ponytail: Gemini IS the "search online" — it knows Pinduoduo/Sin Nam Huat.
 // Upgrade path: grounded search API if Gemini misses too many local shops.
-
-const VALID_IDS = new Set(EXPENSE_CATEGORIES.map(c => c.value))
-
-function merchantKey(name: string): string {
-  return name.trim().toLowerCase()
-}
 
 function needsCategory(t: ParsedTransaction): boolean {
   return t.type === 'expense'
@@ -44,7 +39,7 @@ export async function enrichCategories(
 
     const memory = new Map<string, string>()
     for (const r of known ?? []) {
-      if (VALID_IDS.has(r.category as ExpenseCategory)) memory.set(r.merchant_key, r.category)
+      if (isValidCategorySlug(r.category)) memory.set(r.merchant_key, r.category)
     }
 
     // 2. Gemini for merchants memory doesn't know
@@ -89,7 +84,7 @@ Reply with ONLY a JSON object mapping each merchant to a category id. If you gen
     const result = await model.generateContent(prompt)
     const parsed = JSON.parse(result.response.text()) as Record<string, string>
     for (const [k, v] of Object.entries(parsed)) {
-      if (VALID_IDS.has(v as ExpenseCategory) && v !== 'other_expense') out.set(merchantKey(k), v)
+      if (isValidCategorySlug(v) && v !== 'other_expense') out.set(merchantKey(k), v)
     }
   } catch (err) {
     console.error('[merchant-memory] AI guess failed (non-fatal):', err)
@@ -97,19 +92,5 @@ Reply with ONLY a JSON object mapping each merchant to a category id. If you gen
   return out
 }
 
-/** Remember a user's manual category choice. Always overwrites. Fire-and-forget safe. */
-export async function rememberUserChoice(
-  supabase: SupabaseClient,
-  userId: string,
-  merchantName: string,
-  category: string,
-): Promise<void> {
-  if (!merchantName.trim() || !VALID_IDS.has(category as ExpenseCategory) || category === 'other_expense') return
-  await supabase.from('merchant_categories').upsert({
-    user_id: userId,
-    merchant_key: merchantKey(merchantName),
-    category,
-    source: 'user',
-    updated_at: new Date().toISOString(),
-  })
-}
+// rememberUserChoice lives in ./merchant-memory-client (client components import it).
+export { rememberUserChoice } from './merchant-memory-client'
