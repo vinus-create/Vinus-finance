@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.098'
+export const APP_VERSION = '1.099'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.099',
+    date: '2026-09-09',
+    title: '🗑️ 导入预览可删单笔 + 可改分类（含收入自定义分类）',
+    changes: [
+      '✨ 导入预览每笔右侧新增 🗑️，可在保存前剔除不想导入的交易',
+      '✨ 导入预览的编辑区新增「分类」选择器 —— 支出/收入分类都能改（如商业收入→股息），原本只能改支出/收入/转账大类',
+      '✨ 自定义分类扩展到「收入」：设定页可切换支出/收入分别自建（如自建「投资收入」）',
+      '🐛 修正导入预览的行索引：金额为 0 的行被过滤后，编辑会错改到别的行',
+    ],
+  },
   {
     version: '1.098',
     date: '2026-07-12',

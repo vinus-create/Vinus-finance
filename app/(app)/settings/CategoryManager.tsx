@@ -8,7 +8,8 @@ import { useCustomCategories, invalidateCustomCategories } from '@/lib/hooks/use
 const ICONS = ['🏷️', '🍜', '🛒', '🚗', '🏠', '💊', '🎮', '✈️', '👕', '💰', '📦', '🐾', '🎁', '☕', '⚽', '📚', '💡', '🔧', '🎨', '🍺']
 
 export default function CategoryManager() {
-  const cats = useCustomCategories('expense')
+  const [kind, setKind] = useState<'expense' | 'income'>('expense')
+  const cats = useCustomCategories(kind)
   const [label, setLabel] = useState('')
   const [icon, setIcon] = useState('🏷️')
   const [busy, setBusy] = useState(false)
@@ -23,7 +24,7 @@ export default function CategoryManager() {
       if (!user) return
       const slug = 'custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
       const { error } = await supabase.from('custom_categories')
-        .insert({ user_id: user.id, slug, label: name, icon, kind: 'expense' })
+        .insert({ user_id: user.id, slug, label: name, icon, kind })
       if (error) { toast.error('添加失败——请确认已在 Supabase 建表'); return }
       setLabel(''); setIcon('🏷️')
       invalidateCustomCategories()
@@ -46,6 +47,21 @@ export default function CategoryManager() {
 
   return (
     <div className="space-y-3">
+      {/* Expense / Income switch — custom categories exist for both */}
+      <div className="flex rounded-lg border border-border overflow-hidden text-xs w-fit">
+        {([['expense', '💸 支出'], ['income', '💰 收入']] as const).map(([k, lbl]) => (
+          <button
+            key={k}
+            onClick={() => setKind(k)}
+            className={`px-3 py-1.5 transition-colors ${
+              kind === k ? 'bg-emerald-500 text-white font-semibold' : 'bg-background text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
+
       {/* Existing custom categories */}
       {cats.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -80,7 +96,7 @@ export default function CategoryManager() {
           value={label}
           onChange={e => setLabel(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') add() }}
-          placeholder="新分类名称，例如「宠物」"
+          placeholder={kind === 'expense' ? '新支出分类，例如「宠物」' : '新收入分类，例如「投资收入」'}
           className="flex-1 h-9 text-sm px-3 rounded-lg border border-border bg-background"
         />
         <button

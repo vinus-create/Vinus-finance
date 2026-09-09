@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, EXPENSE_CATEGORY_MAP, INCOME_CATEGORY_MAP } from '@/lib/constants/categories'
+import { useCustomCategories, type CustomCategory } from '@/lib/hooks/useCustomCategories'
 import { cn } from '@/lib/utils'
 import type { ParsedTransaction } from '@/lib/ai/parser'
-import type { Account, LedgerType } from '@/lib/types/app.types'
+import type { Account, LedgerType, ExpenseCategory, IncomeCategory } from '@/lib/types/app.types'
 import type { IngestMeta, IngestSaveRequest, SaveTransactionRow } from '@/lib/types/ingest.types'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import { getCategoryLabel } from '@/lib/utils/category-i18n'
@@ -26,16 +27,32 @@ interface Props {
 
 type SkippedRow = ParsedTransaction & { certain: boolean }
 
-function getTxnIcon(t: ParsedTransaction): string {
-  if (t.type === 'expense' && t.expense_category) return EXPENSE_CATEGORY_MAP[t.expense_category]?.icon ?? '💸'
-  if (t.type === 'income' && t.income_category) return INCOME_CATEGORY_MAP[t.income_category]?.icon ?? '💰'
-  return '🔄'
+/** Category slug on a row, or null for transfers / uncategorized. */
+function catSlug(t: ParsedTransaction): string | null {
+  if (t.type === 'expense') return t.expense_category ?? null
+  if (t.type === 'income') return t.income_category ?? null
+  return null
 }
 
-function getTxnLabel(txn: ParsedTransaction, fallback: string, lang: LangCode): string {
-  if (txn.type === 'expense' && txn.expense_category) return getCategoryLabel(txn.expense_category, 'expense', lang)
-  if (txn.type === 'income' && txn.income_category) return getCategoryLabel(txn.income_category, 'income', lang)
-  return fallback
+function builtinMeta(slug: string, type: ParsedTransaction['type']) {
+  return type === 'expense'
+    ? EXPENSE_CATEGORY_MAP[slug as ExpenseCategory]
+    : INCOME_CATEGORY_MAP[slug as IncomeCategory]
+}
+
+function getTxnIcon(t: ParsedTransaction, custom: CustomCategory[]): string {
+  const slug = catSlug(t)
+  if (!slug) return '🔄'
+  return builtinMeta(slug, t.type)?.icon
+    ?? custom.find(c => c.slug === slug)?.icon
+    ?? (t.type === 'income' ? '💰' : '💸')
+}
+
+function getTxnLabel(txn: ParsedTransaction, fallback: string, lang: LangCode, custom: CustomCategory[]): string {
+  const slug = catSlug(txn)
+  if (!slug) return fallback
+  if (builtinMeta(slug, txn.type)) return getCategoryLabel(slug, txn.type, lang)
+  return custom.find(c => c.slug === slug)?.label ?? slug
 }
 
 function accountEmoji(type: Account['account_type']): string {
@@ -71,6 +88,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
   )
   const [globalAccount, setGlobalAccount] = useState<string>(detectedAccount?.name ?? '')
   const { t, lang } = useLang()
+  const customCats = useCustomCategories()
 
   const loadAccounts = useCallback(async () => {
     const supabase = createClient()
@@ -89,6 +107,22 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
 
   function update(idx: number, patch: Partial<ParsedTransaction>) {
     setEdited(prev => prev.map((txn, i) => i === idx ? { ...txn, ...patch } : txn))
+  }
+
+  /** Drop a row from this import entirely (it is simply never saved). */
+  function removeRow(idx: number) {
+    setEdited(prev => prev.filter((_, i) => i !== idx))
+    setExpandedIdx(null)
+  }
+
+  /** Built-in (localized) + user's custom categories for a row's type. */
+  function catOptionsFor(type: ParsedTransaction['type']) {
+    if (type === 'transfer') return []
+    const builtins = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
+    return [
+      ...builtins.map(c => ({ value: c.value as string, icon: c.icon, label: getCategoryLabel(c.value, type, lang) })),
+      ...customCats.filter(c => c.kind === type).map(c => ({ value: c.slug, icon: c.icon, label: c.label })),
+    ]
   }
 
   function applyGlobalAccount(name: string) {
@@ -182,7 +216,11 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
     }
   }
 
-  const valid = edited.filter(txn => txn.amount > 0)
+  // Keep each row's index into `edited` — update/remove/account helpers all address
+  // that array, so filtering without it silently edits the wrong row.
+  const valid = edited
+    .map((txn, origIdx) => ({ txn, origIdx }))
+    .filter(({ txn }) => txn.amount > 0)
   const saveLabel = valid.length > 1
     ? t.preview_save_many.replace('{n}', String(valid.length))
     : t.preview_save
@@ -273,31 +311,37 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
 
       {/* Transaction cards */}
       <div className="space-y-2 max-h-[50dvh] overflow-y-auto pr-0.5">
-        {valid.map((txn, i) => {
-          const isExpanded = expandedIdx === i
-          const acctName = resolvedAccountName(i)
+        {valid.map(({ txn, origIdx }) => {
+          const isExpanded = expandedIdx === origIdx
+          const acctName = resolvedAccountName(origIdx)
+          const catOptions = catOptionsFor(txn.type)
+          const currentCat = catSlug(txn)
 
           return (
-            <Card key={i} className="bg-muted border-0 overflow-hidden">
+            <Card key={origIdx} className="bg-muted border-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-3 flex items-start gap-2">
-                  <span className="text-xl leading-none mt-0.5 shrink-0">{getTxnIcon(txn)}</span>
+                  <span className="text-xl leading-none mt-0.5 shrink-0">{getTxnIcon(txn, customCats)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {txn.confidence < 0.6 && <span title="AI 解析置信度低，请核对" className="mr-1">⚠️</span>}
                       {txn.is_duplicate_override && <span title="疑似重复 — 已强制导入" className="mr-1 text-amber-500">🔁</span>}
                       {txn.merchant_name || txn.description || t.txn_unnamed}
                     </p>
-                    <p className="text-xs text-muted-foreground">{getTxnLabel(txn, t.preview_transfer, lang)} • {acctName || 'Cash'}</p>
+                    <p className="text-xs text-muted-foreground">{getTxnLabel(txn, t.preview_transfer, lang, customCats)} • {acctName || 'Cash'}</p>
                     <p className="text-xs text-muted-foreground">{txn.transaction_date}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className={cn('text-sm font-semibold', txn.type === 'income' ? 'text-emerald-600' : 'text-foreground')}>
                       {txn.type === 'income' ? '+' : '-'}RM {txn.amount.toFixed(2)}
                     </span>
-                    <button onClick={() => setExpandedIdx(isExpanded ? null : i)}
+                    <button onClick={() => setExpandedIdx(isExpanded ? null : origIdx)}
                       className="text-xs text-muted-foreground bg-background rounded-lg px-2 py-1 hover:bg-foreground/10">
                       {isExpanded ? t.preview_done : t.preview_edit}
+                    </button>
+                    <button onClick={() => removeRow(origIdx)} title="不导入这笔"
+                      className="text-sm text-muted-foreground hover:text-red-500 px-1 py-1 leading-none">
+                      🗑️
                     </button>
                   </div>
                 </div>
@@ -307,7 +351,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                     <div className="grid grid-cols-3 gap-1.5">
                       {(['expense', 'income', 'transfer'] as const).map(tp => (
                         <button key={tp}
-                          onClick={() => update(i, {
+                          onClick={() => update(origIdx, {
                             type: tp,
                             expense_category: tp === 'expense' ? (txn.expense_category ?? 'other_expense') : null,
                             income_category: tp === 'income' ? (txn.income_category ?? 'other_income') : null,
@@ -321,13 +365,39 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                     <div className="grid grid-cols-5 gap-2">
                       <Input className="col-span-3 h-9 text-sm bg-background" placeholder={t.txn_unnamed}
                         value={txn.merchant_name || txn.description || ''}
-                        onChange={e => update(i, { merchant_name: e.target.value, description: e.target.value })} />
+                        onChange={e => update(origIdx, { merchant_name: e.target.value, description: e.target.value })} />
                       <Input type="number" step="0.01" className="col-span-2 h-9 text-sm bg-background"
-                        value={txn.amount} onChange={e => update(i, { amount: Math.round((parseFloat(e.target.value) || 0) * 100) / 100 })} />
+                        value={txn.amount} onChange={e => update(origIdx, { amount: Math.round((parseFloat(e.target.value) || 0) * 100) / 100 })} />
                     </div>
 
                     <Input type="date" className="h-9 text-sm bg-background" value={txn.transaction_date}
-                      onChange={e => update(i, { transaction_date: e.target.value })} />
+                      onChange={e => update(origIdx, { transaction_date: e.target.value })} />
+
+                    {/* Category picker — built-in (localized) + custom, per row type */}
+                    {catOptions.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t.edit_txn_category_label}
+                        </p>
+                        <div className="grid grid-cols-4 gap-1 max-h-40 overflow-y-auto p-1 bg-muted/30 rounded-lg">
+                          {catOptions.map(opt => (
+                            <button
+                              key={opt.value}
+                              onClick={() => update(origIdx, txn.type === 'expense'
+                                ? { expense_category: opt.value as ExpenseCategory, income_category: null }
+                                : { income_category: opt.value as IncomeCategory, expense_category: null })}
+                              className={cn(
+                                'flex flex-col items-center gap-0.5 p-1.5 rounded-lg text-[10px] transition-colors',
+                                currentCat === opt.value ? 'bg-emerald-500 text-white' : 'bg-background hover:bg-muted'
+                              )}
+                            >
+                              <span className="text-xl">{opt.icon}</span>
+                              <span className="leading-tight text-center line-clamp-2">{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
@@ -335,26 +405,26 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                       </p>
                       <div className="flex gap-1.5 flex-wrap">
                         {accounts.map(acct => (
-                          <button key={acct.id} onClick={() => selectAccount(i, acct.name)}
+                          <button key={acct.id} onClick={() => selectAccount(origIdx, acct.name)}
                             className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
-                              txn.account_name === acct.name && !showCustomInput[i]
+                              txn.account_name === acct.name && !showCustomInput[origIdx]
                                 ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-border hover:bg-muted'}`}>
                             <span>{accountEmoji(acct.account_type)}</span>
                             <span>{acct.name}</span>
                           </button>
                         ))}
-                        <button onClick={() => selectCustom(i)}
+                        <button onClick={() => selectCustom(origIdx)}
                           className={`text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
-                            showCustomInput[i] ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-dashed border-border hover:bg-muted text-muted-foreground'}`}>
+                            showCustomInput[origIdx] ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-dashed border-border hover:bg-muted text-muted-foreground'}`}>
                           {t.preview_custom_account}
                         </button>
                       </div>
-                      {showCustomInput[i] && (
+                      {showCustomInput[origIdx] && (
                         <div className="flex gap-2 mt-1">
                           <Input autoFocus className="h-8 text-sm flex-1 bg-background" placeholder="e.g. Alliance Bank"
-                            value={customAccount[i] ?? ''} onChange={e => setCustomAccount(prev => ({ ...prev, [i]: e.target.value }))}
-                            onKeyDown={e => { if (e.key === 'Enter') commitCustom(i, customAccount[i] ?? '') }} />
-                          <button onClick={() => commitCustom(i, customAccount[i] ?? '')}
+                            value={customAccount[origIdx] ?? ''} onChange={e => setCustomAccount(prev => ({ ...prev, [origIdx]: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter') commitCustom(origIdx, customAccount[origIdx] ?? '') }} />
+                          <button onClick={() => commitCustom(origIdx, customAccount[origIdx] ?? '')}
                             className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500 text-white">{t.preview_done}</button>
                         </div>
                       )}
@@ -365,7 +435,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">到 (To)</p>
                         <div className="flex gap-1.5 flex-wrap">
                           {accounts.filter(acct => acct.name !== txn.account_name).map(acct => (
-                            <button key={acct.id} onClick={() => update(i, { to_account_name: acct.name })}
+                            <button key={acct.id} onClick={() => update(origIdx, { to_account_name: acct.name })}
                               className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
                                 txn.to_account_name === acct.name ? 'bg-blue-500 border-blue-500 text-white' : 'border-border hover:bg-muted'}`}>
                               <span>{accountEmoji(acct.account_type)}</span>
