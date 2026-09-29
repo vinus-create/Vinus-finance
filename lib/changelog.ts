@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.101'
+export const APP_VERSION = '1.102'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.102',
+    date: '2026-09-29',
+    title: '🔔 修复提醒通知从未发出（cron 被 RLS 挡掉）',
+    changes: [
+      '🐛 根因：/api/cron/reminders 用的是基于 cookie 的客户端，cron 请求没有用户会话，RLS 挡掉所有行 → 每天查到 0 条提醒，推送和邮件从未真正发出',
+      '🔧 改用 service-role 客户端绕过 RLS；邮件分支复用同一客户端，不再每笔新建',
+      '⚠️ 生效后下一次 cron（每天 00:00 UTC / 早上 8 点）会开始真实发送到期提醒的推送与邮件',
+    ],
+  },
   {
     version: '1.101',
     date: '2026-09-29',
