@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.102'
+export const APP_VERSION = '1.103'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.103',
+    date: '2026-09-29',
+    title: '🧠 导入预览手选的分类也会被记住',
+    changes: [
+      '🐛 原本只有「保存后再编辑某笔交易」才写入商家记忆；在导入预览里逐个改的分类只对当批有效，下次导入同商家又要重改',
+      '✨ 现在预览里手选分类，保存时一并写入 merchant_categories（用户选择优先级最高，AI 永不覆盖），下次导入同商家自动套用',
+      '📌 仅支出分类会被记住（商家记忆表按支出设计）；同一商家取最后一次选择，不重复写入',
+    ],
+  },
   {
     version: '1.102',
     date: '2026-09-29',

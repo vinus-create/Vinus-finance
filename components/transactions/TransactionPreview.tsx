@@ -83,6 +83,9 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
+  // Rows whose category the user set by hand here — remembered on save so the
+  // same merchant auto-categorizes on the next import.
+  const [catTouched, setCatTouched] = useState<Set<number>>(new Set())
   const [globalLedger, setGlobalLedger] = useState<LedgerType>(() =>
     transactions.some(tx => tx.ledger === 'business') ? 'business' : 'personal'
   )
@@ -206,6 +209,29 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error ?? t.preview_error_save)
+
+      // Remember hand-picked categories so the next import auto-applies them.
+      // Fire-and-forget: a failed memory write must never block the save.
+      if (catTouched.size > 0) {
+        void (async () => {
+          try {
+            const { rememberUserChoice } = await import('@/lib/utils/merchant-memory-client')
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+            const seen = new Set<string>()
+            for (const idx of catTouched) {
+              const row = edited[idx]
+              const merchant = row?.merchant_name?.trim()
+              if (!row || row.type !== 'expense' || !merchant || !row.expense_category) continue
+              const key = merchant.toLowerCase()
+              if (seen.has(key)) continue
+              seen.add(key)
+              await rememberUserChoice(supabase, user.id, merchant, row.expense_category)
+            }
+          } catch { /* memory is best-effort */ }
+        })()
+      }
 
       // Balances are applied by the DB trigger; closing balance synced server-side
       setShowCelebration(true)
@@ -383,9 +409,12 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                           {catOptions.map(opt => (
                             <button
                               key={opt.value}
-                              onClick={() => update(origIdx, txn.type === 'expense'
-                                ? { expense_category: opt.value as ExpenseCategory, income_category: null }
-                                : { income_category: opt.value as IncomeCategory, expense_category: null })}
+                              onClick={() => {
+                                update(origIdx, txn.type === 'expense'
+                                  ? { expense_category: opt.value as ExpenseCategory, income_category: null }
+                                  : { income_category: opt.value as IncomeCategory, expense_category: null })
+                                setCatTouched(prev => new Set(prev).add(origIdx))
+                              }}
                               className={cn(
                                 'flex flex-col items-center gap-0.5 p-1.5 rounded-lg text-[10px] transition-colors',
                                 currentCat === opt.value ? 'bg-emerald-500 text-white' : 'bg-background hover:bg-muted'
