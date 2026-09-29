@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.100'
+export const APP_VERSION = '1.101'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.101',
+    date: '2026-09-29',
+    title: '🔄 新增数据库保活，杜绝免费版 Supabase 自动暂停',
+    changes: [
+      '🐛 根因：免费版 Supabase 闲置约 7 天会自动暂停，DNS 直接撤掉，导致生产站和本地全部「load failed」（20 天内已发生两次）',
+      '✨ 新增 /api/cron/keepalive，每天 12:00 UTC 用 service-role 查一次数据库保持活跃',
+      '⚠️ 发现既有 bug（本版未改）：/api/cron/reminders 用的是基于 cookie 的客户端，cron 无会话 → RLS 挡掉所有行 → 提醒通知其实从未发出，也因此无法保活',
+    ],
+  },
   {
     version: '1.100',
     date: '2026-09-09',
