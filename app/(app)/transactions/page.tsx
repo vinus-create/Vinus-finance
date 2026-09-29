@@ -202,7 +202,9 @@ export default async function TransactionsPage({ searchParams }: Props) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   RM {groups[dateStr]!
-                    .reduce((s, txn) => s + (txn.type === 'income' ? 1 : -1) * Number(txn.amount), 0)
+                    .reduce((s, txn) => txn.type === 'income' ? s + Number(txn.amount)
+                      : txn.type === 'expense' ? s - Number(txn.amount)
+                      : s, 0)  // transfers move money between own accounts — not spending
                     .toFixed(2)}
                 </p>
               </div>

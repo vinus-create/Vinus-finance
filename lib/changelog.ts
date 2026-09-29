@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.103'
+export const APP_VERSION = '1.104'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.104',
+    date: '2026-09-29',
+    title: '🚨 修复信用卡余额符号错误——净资产被高估 RM 4,279.78',
+    changes: [
+      '🐛 根因：信用卡对账单把「结欠」印成正数，同步时原样写入 accounts.balance，于是欠款被当成资产。HSBC 存成 +2,139.89（应为 −2,139.89），而 UOB ONE 是 −4,900.00，同类账户符号相反',
+      '🔧 对账单同步改为：信用卡一律存负数（欠款），与余额触发器的银行语义一致',
+      '🔧 Admin 净资产原本对信用卡做 s − balance（假设正数=欠款），与其他页面冲突，现统一为直接求和',
+      '🐛 交易页「每日小计」把转账当成支出扣掉（自有账户间转账不是消费），现已排除',
+      '⚠️ 已存在的 HSBC 余额需手动改符号后净资产才准确',
+    ],
+  },
   {
     version: '1.103',
     date: '2026-09-29',

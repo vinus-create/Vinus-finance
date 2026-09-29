@@ -213,9 +213,10 @@ export async function POST(request: NextRequest) {
   //    and only when this statement is newer than the last one imported.
   if (body.statementSync?.account_name && body.statementSync.closing_balance !== null) {
     const s = body.statementSync
+    const closingBalance: number = body.statementSync.closing_balance
     const { data: acct } = await supabase
       .from('accounts')
-      .select('id, last_statement_date')
+      .select('id, last_statement_date, account_type')
       .eq('user_id', user.id)
       .eq('name', s.account_name)
       .maybeSingle()
@@ -226,8 +227,14 @@ export async function POST(request: NextRequest) {
       const newer = !!s.statement_date
         && (!acct.last_statement_date || s.statement_date > acct.last_statement_date)
       if (newer) {
+        // A credit-card statement prints what you OWE as a positive number.
+        // Store it negative so every consumer (net worth, assets/liabilities)
+        // reads it as debt, matching the balance trigger's bank semantics.
+        const signed = acct.account_type === 'credit_card'
+          ? -Math.abs(closingBalance)
+          : closingBalance
         await supabase.from('accounts').update({
-          balance: s.closing_balance,
+          balance: signed,
           last_statement_date: s.statement_date ?? acct.last_statement_date,
           updated_at: new Date().toISOString(),
         }).eq('id', acct.id)

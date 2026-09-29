@@ -170,8 +170,9 @@ export async function getUserDetail(id: string): Promise<AdminUserDetail | null>
   const allTxns = txns ?? []
   const income = allTxns.filter((t: { type: string }) => t.type === 'income').reduce((s: number, t: { amount: number }) => s + t.amount, 0)
   const expense = allTxns.filter((t: { type: string }) => t.type === 'expense').reduce((s: number, t: { amount: number }) => s + t.amount, 0)
-  const netWorth = (accounts ?? []).reduce((s: number, a: { balance: number; account_type: string }) =>
-    a.account_type === 'credit_card' ? s - a.balance : s + a.balance, 0)
+  // Credit-card balances are stored negative (debt), so a plain sum is correct.
+  const netWorth = (accounts ?? []).reduce((s: number, a: { balance: number }) =>
+    s + Number(a.balance), 0)
 
   // Get full tx count
   const { count: txCount } = await supabase
