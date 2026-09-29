@@ -65,11 +65,17 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
   // the single source of truth — save() must never override a user's choice.
   const [edited, setEdited] = useState<SaveTransactionRow[]>(() => {
     const defaultAccount = detectedAccount?.name ?? ingestMeta?.candidateAccount?.suggested_name ?? null
-    return transactions.map(t => ({
-      ...t,
-      account_name: defaultAccount ?? t.account_name,
-      to_account_name: t.to_account_name ?? null,
-    }))
+    return transactions.map(t => {
+      // A transfer INTO the statement account (e.g. card payment received):
+      // the statement account is the destination — keep the parsed source
+      // ("" = unknown) instead of stamping the statement account on it.
+      const incoming = t.type === 'transfer' && !!defaultAccount && t.to_account_name === defaultAccount
+      return {
+        ...t,
+        account_name: incoming ? (t.account_name ?? '') : (defaultAccount ?? t.account_name),
+        to_account_name: t.to_account_name ?? null,
+      }
+    })
   })
   const [skipped, setSkipped] = useState<SkippedRow[]>(() => [
     ...(ingestMeta?.suspected ?? []).map(t => ({ ...t, certain: false })),
@@ -130,7 +136,12 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
 
   function applyGlobalAccount(name: string) {
     setGlobalAccount(name)
-    setEdited(prev => prev.map(txn => ({ ...txn, account_name: name })))
+    // Re-pointing the statement account: incoming transfers follow on their
+    // destination leg, everything else on its source leg.
+    setEdited(prev => prev.map(txn =>
+      txn.type === 'transfer' && globalAccount && txn.to_account_name === globalAccount
+        ? { ...txn, to_account_name: name }
+        : { ...txn, account_name: name }))
     setShowCustomInput({})
   }
 
@@ -182,7 +193,10 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
         .map(txn => ({
           ...txn,
           transaction_date: sanitizeDate(txn.transaction_date),
-          account_name: txn.account_name || candidate?.suggested_name || 'Cash',
+          // a transfer's source may legitimately be unknown ("") — never invent 'Cash'
+          account_name: txn.type === 'transfer'
+            ? (txn.account_name ?? '')
+            : (txn.account_name || candidate?.suggested_name || 'Cash'),
           to_account_name: txn.type === 'transfer' ? (txn.to_account_name ?? null) : null,
           ledger: globalLedger,
         }))
@@ -354,7 +368,9 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                       {txn.is_duplicate_override && <span title="疑似重复 — 已强制导入" className="mr-1 text-amber-500">🔁</span>}
                       {txn.merchant_name || txn.description || t.txn_unnamed}
                     </p>
-                    <p className="text-xs text-muted-foreground">{getTxnLabel(txn, t.preview_transfer, lang, customCats)} • {acctName || 'Cash'}</p>
+                    <p className="text-xs text-muted-foreground">{getTxnLabel(txn, t.preview_transfer, lang, customCats)} • {txn.type === 'transfer'
+                      ? `${acctName || '?'} → ${txn.to_account_name || '?'}`
+                      : (acctName || 'Cash')}</p>
                     <p className="text-xs text-muted-foreground">{txn.transaction_date}</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -432,6 +448,11 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                         {txn.type === 'transfer' ? '从 (From)' : t.preview_account_label}
                       </p>
+                      {txn.type === 'transfer' && !txn.account_name?.trim() && (
+                        <p className="text-[10px] text-amber-600">
+                          对账单没写从哪个户口付的 —— 可以选一个；留空也行，之后导入那个银行的对账单会自动补上
+                        </p>
+                      )}
                       <div className="flex gap-1.5 flex-wrap">
                         {accounts.map(acct => (
                           <button key={acct.id} onClick={() => selectAccount(origIdx, acct.name)}

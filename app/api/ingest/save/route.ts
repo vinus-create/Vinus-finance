@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     const typeGuess =
       lower.includes('cash') || lower.includes('现金') || lower.includes('tunai') ? 'cash'
       : /tng|touch|grabpay|shopeepay|boost|bigpay|mae/.test(lower) ? 'ewallet'
+      : /card|kad|kredit|credit/.test(lower) ? 'credit_card'
       : 'bank'
     const { error: e } = await supabase.from('accounts').insert({
       user_id: user.id, name, account_type: typeGuess, balance: 0,
@@ -165,7 +166,8 @@ export async function POST(request: NextRequest) {
     reference_number: t.reference_number ?? null,
     transaction_date: t.transaction_date,
     transaction_time: (t as { transaction_time?: string | null }).transaction_time ?? null,
-    account_name: t.account_name || 'Cash',
+    // transfers may have an unknown source ("") — never invent 'Cash' for them
+    account_name: t.type === 'transfer' ? (t.account_name ?? '') : (t.account_name || 'Cash'),
     to_account_name: t.type === 'transfer' ? (t.to_account_name ?? null) : null,
     ledger: t.ledger === 'business' ? 'business' : 'personal',
     is_tax_deductible: t.is_tax_deductible === true,

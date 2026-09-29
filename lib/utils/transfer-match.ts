@@ -13,6 +13,8 @@ const MAX_DAY_DELTA = 2
 // prevents a RM50 mamak expense pairing with an unrelated RM50 credit.
 const TRANSFERISH = /transfer|trf\b|duitnow|ibg|instant|ibft|top.?up|topup|reload|own acc|pemindahan|pindah|m2u|sendiri/i
 
+const CARDISH = /card|kad|kredit|credit|cc|jompay/i
+
 const TRANSFERISH_EXPENSE_CATS = new Set(['other_expense', 'touch_n_go', 'savings', 'investment'])
 const TRANSFERISH_INCOME_CATS = new Set(['other_income', 'interest'])
 
@@ -58,6 +60,46 @@ function transfersOverlap(a: ParsedTransaction, b: ParsedTransaction): boolean {
     || (aTo !== '' && overlap(aTo, bFrom)) || (bTo !== '' && overlap(bTo, aFrom))
 }
 
+// ─── Which leg of a statement transfer is the statement account? ──────
+/**
+ * A credit on a statement that the AI marked as a transfer (e.g. a card
+ * "PAYMENT REC'D WITH THANKS") moves money INTO the statement account. Pin
+ * to_account_name to its exact name; keep the source only when it names one of
+ * the user's accounts exactly, else "" (unknown — user can pick it in preview,
+ * or importing the paying bank's statement later fills it in).
+ *
+ * On a CARD statement the AI often writes the card on both legs ("UOB → UOB");
+ * card statements have no outgoing transfers, so that is a payment received.
+ * Bank-side card payments get their destination resolved to the user's real
+ * card account so no junk "UOB" account is auto-created.
+ */
+export function normalizeStatementTransfers(
+  rows: ParsedTransaction[],
+  opts: {
+    stmtAccount: string
+    stmtIsCard: boolean
+    accountNames: string[]
+    resolveCard: (name: string) => string | null
+  },
+): void {
+  const overlaps = (x: string, y: string) => x.length >= 3 && y.length >= 3 && (x.includes(y) || y.includes(x))
+  const stmtN = norm(opts.stmtAccount)
+  for (const t of rows) {
+    if (t.type !== 'transfer') continue
+    const from = (t.account_name ?? '').trim()
+    const fromIsStmt = from !== '' && overlaps(norm(from), stmtN)
+    const toIsStmt = from === '' || overlaps(norm(t.to_account_name), stmtN)
+    const incoming = (toIsStmt && !fromIsStmt) || (fromIsStmt && toIsStmt && opts.stmtIsCard)
+    if (incoming) {
+      t.to_account_name = opts.stmtAccount
+      t.account_name = fromIsStmt ? '' : (opts.accountNames.find(n => norm(n) === norm(from)) ?? '')
+    } else if (t.to_account_name && CARDISH.test(`${text(t)} ${t.to_account_name}`)) {
+      const card = opts.resolveCard(t.to_account_name)
+      if (card) t.to_account_name = card
+    }
+  }
+}
+
 export interface BatchMatchResult {
   rows: ParsedTransaction[]
   mergedCount: number
@@ -79,7 +121,8 @@ export function matchTransfersInBatch(input: ParsedTransaction[]): BatchMatchRes
       if (rows[j].type !== 'transfer') continue
       if (transfersOverlap(rows[i], rows[j])) {
         // keep the leg with more complete from/to information
-        const keepJ = (rows[j].to_account_name ? 1 : 0) > (rows[i].to_account_name ? 1 : 0)
+        const score = (r: ParsedTransaction) => (r.account_name?.trim() ? 1 : 0) + (r.to_account_name ? 1 : 0)
+        const keepJ = score(rows[j]) > score(rows[i])
         if (keepJ) rows[i] = rows[j]
         rows.splice(j, 1)
         merged++
@@ -180,9 +223,33 @@ export function matchTransfersAgainstDb(
       const dup = dbRecent.find(d =>
         !consumed.has(d.id) && d.type === 'transfer' && transfersOverlap(t, dbLiteToParsed(d))
       )
-      if (dup) { consumed.add(dup.id); droppedCount++; continue }
+      if (dup) {
+        consumed.add(dup.id)
+        // The recorded leg came from a card statement that couldn't name the
+        // paying bank (source "") — this leg knows it, so fill it in.
+        if (!(dup.account_name ?? '').trim() && t.account_name?.trim()) {
+          conversions.push({ id: dup.id, account_name: t.account_name, to_account_name: dup.to_account_name ?? t.to_account_name ?? '' })
+        }
+        droppedCount++
+        continue
+      }
       rows.push(t)
       continue
+    }
+
+    // Bank-side card payment the AI booked as an expense ↔ an existing card-side
+    // transfer with unknown source: same movement — fill the source, drop this.
+    if (t.type === 'expense' && CARDISH.test(text(t))) {
+      const open = dbRecent.find(d =>
+        !consumed.has(d.id) && d.type === 'transfer' && !(d.account_name ?? '').trim() &&
+        sameAmount(d.amount, t.amount) && dayDelta(d.transaction_date, t.transaction_date) <= MAX_DAY_DELTA
+      )
+      if (open) {
+        consumed.add(open.id)
+        conversions.push({ id: open.id, account_name: t.account_name, to_account_name: open.to_account_name ?? '' })
+        droppedCount++
+        continue
+      }
     }
 
     // Incoming expense ↔ existing income (or vice versa) = one movement

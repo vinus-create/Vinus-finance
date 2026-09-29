@@ -10,8 +10,8 @@ import {
   type ParsedTransaction,
 } from '@/lib/ai/parser'
 import { computeDedupHash, sha256Hex } from '@/lib/utils/dedup'
-import { resolveAccountName, type AccountLite } from '@/lib/utils/account-alias'
-import { matchTransfersInBatch } from '@/lib/utils/transfer-match'
+import { resolveAccountName, resolveAccount, type AccountLite } from '@/lib/utils/account-alias'
+import { matchTransfersInBatch, normalizeStatementTransfers } from '@/lib/utils/transfer-match'
 import { enrichCategories } from '@/lib/utils/merchant-memory'
 import { applyCategoryRules } from '@/lib/utils/category-rules'
 import type { CandidateAccount } from '@/lib/types/ingest.types'
@@ -401,6 +401,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ─── Transfers on a statement: which leg is THIS account? ─────────────
+  // (see normalizeStatementTransfers — fixes card payments becoming "UOB ONE → UOB ONE")
+  const stmtAccount = detectedAccount?.name ?? candidateAccount?.suggested_name ?? null
+  const isIncomingTransfer = (t: ParsedTransaction) =>
+    t.type === 'transfer' && !!stmtAccount && t.to_account_name === stmtAccount
+  if (type === 'pdf' && stmtAccount) {
+    const cards = accounts.filter(a => a.account_type === 'credit_card')
+    normalizeStatementTransfers(parseResult.transactions, {
+      stmtAccount,
+      stmtIsCard: accounts.find(a => a.name === stmtAccount)?.account_type === 'credit_card'
+        || candidateAccount?.account_type === 'credit_card',
+      accountNames: accounts.map(a => a.name),
+      resolveCard: name => resolveAccount(name, cards)?.name ?? null,
+    })
+  }
+
   // ─── Import batch + row-level dedup (statement uploads) ────
   let batchId: string | null = null
   let fresh: ParsedTransaction[] = parseResult.transactions
@@ -410,7 +426,7 @@ export async function POST(request: NextRequest) {
   if (type === 'pdf' || type === 'image') {
     const classified = await classifyDuplicates(
       supabase, user.id, parseResult.transactions,
-      t => detectedAccount?.name || t.account_name,
+      t => isIncomingTransfer(t) ? (t.account_name ?? '') : (detectedAccount?.name || t.account_name),
     )
     // Collapse own-account movement pairs (e.g. bank debit + wallet reload credit)
     fresh = matchTransfersInBatch(classified.fresh).rows
@@ -454,7 +470,7 @@ export async function POST(request: NextRequest) {
         reference_number: t.reference_number,
         transaction_date: t.transaction_date,
         transaction_time: t.transaction_time ?? null,
-        account_name: detectedAccount?.name || t.account_name,
+        account_name: isIncomingTransfer(t) ? (t.account_name ?? '') : (detectedAccount?.name || t.account_name),
         to_account_name: t.type === 'transfer' ? (t.to_account_name ?? null) : null,
         ledger: t.ledger,
         is_tax_deductible: t.is_tax_deductible,

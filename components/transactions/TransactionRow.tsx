@@ -60,7 +60,7 @@ export default function TransactionRow({ txn, lang, showDate, viewAccount }: Pro
   const incoming = localTxn.type === 'transfer' && !!viewAccount
     && localTxn.to_account_name === viewAccount && localTxn.account_name !== viewAccount
   const transferLabel = viewAccount
-    ? (incoming ? `← ${localTxn.account_name}` : `→ ${localTxn.to_account_name ?? ''}`)
+    ? (incoming ? `← ${localTxn.account_name || '?'}` : `→ ${localTxn.to_account_name || '?'}`)
     : 'Transfer'
   const positive = localTxn.type === 'income' || incoming
   const cur = localTxn.currency && localTxn.currency !== 'MYR' ? localTxn.currency : 'RM'

@@ -30,7 +30,12 @@ medical, pharmacy, gym, education, books, entertainment, travel, subscription,
 loan_repayment, investment, savings, other_expense
 
 INCOME CATEGORIES (use exact values):
-salary, bonus, freelance, business_income, rental_income, dividend, interest, epf_withdrawal, government_aid, other_income
+salary, bonus, allowance, reimbursement, freelance,
+business_income, marketplace_payout, sales, service_income, commission, rental_income,
+dividend, interest, capital_gain,
+cashback, refund, tax_refund, insurance_claim,
+gift, prize, government_aid, epf_withdrawal, other_income
+(use other_income ONLY when none of the above fits)
 
 RULES:
 - type = "expense" → expense_category must be set, income_category must be null
@@ -88,6 +93,20 @@ E-WALLET RULES (CRITICAL — reloads are NOT spending):
 - Only use category "touch_n_go" for TNG-related fees/charges that are genuinely an expense
   (e.g. card fee), NEVER for reloads.
 
+CREDIT CARD RULES (CRITICAL — paying off a card is NOT income and NOT spending):
+- ON A CREDIT CARD STATEMENT, a credit/+ like "PAYMENT RECEIVED", "PAYMENT REC'D", "PAYMENT REC'D WITH THANKS",
+  "PAYMENT - THANK YOU", "THANK YOU", "BAYARAN DITERIMA", "AUTOPAY", "IBG PAYMENT", "JOMPAY PAYMENT"
+  is the user paying the card from their own bank → type = "transfer", both categories null,
+  to_account_name = this card (use the same name as account_info.bank_name),
+  account_name = the paying bank ONLY if it is printed, otherwise "" (empty string) —
+  NEVER put the card itself as account_name. NEVER income.
+- Card cashback / rebate credits → income, cashback. Merchant refund / reversal credits → income, refund.
+- Card fees ("FINANCE CHARGE", "INTEREST", "PROFIT CHARGE", "LATE CHARGE", "ANNUAL FEE", "SST") → expense, other_expense.
+- ON A BANK STATEMENT, a debit/- like "CREDIT CARD PAYMENT", "CC PAYMENT", "CARD PAYMENT", "PAYMENT TO [bank] CARD",
+  "BAYARAN KAD KREDIT", "JOMPAY" to a card biller → type = "transfer", both categories null,
+  account_name = this bank, to_account_name = the card's bank as printed (e.g. "UOB", "HSBC", "Maybank Credit Card").
+  NOT an expense — the purchases were already recorded on the card; counting the payment too double-counts spending.
+
 MALAYSIAN PAYMENT CHANNEL GLOSSARY (channel describes HOW money moved, never the direction):
 - "DuitNow Transfer" — instant transfer by phone/IC/account number
 - "DuitNow QR" — QR payment (bank app or e-wallet at merchant)
@@ -121,7 +140,14 @@ Specific patterns (apply only after confirming direction above):
 - "FPXTRANSACTION" / "FPX Purchase" (debit/-) → expense (check merchant for category)
 - "ATM WITHDRAWAL" → expense, other_expense
 - "CDM Deposit" (credit/+) → income, other_income
-- "CASHBACK" (credit/+) → income, other_income
+- "CASHBACK" / "CASH BACK" / "CASH REBATE" / "REBATE" / "CB" (credit/+) → income, cashback
+- "REFUND" / "REVERSAL" / "RETURN" / "CREDIT ADJUSTMENT" / merchant refund (credit/+) → income, refund
+- "LHDN" / "HASIL" / "INCOME TAX REFUND" / "BAYARAN BALIK CUKAI" (credit/+) → income, tax_refund
+- insurer name (Prudential, AIA, Great Eastern, Allianz, Etiqa, Zurich, Takaful...) with "CLAIM" (credit/+) → income, insurance_claim
+- "ALLOWANCE" / "ELAUN" (credit/+) → income, allowance;  "CLAIM" / "REIMBURSEMENT" / "TUNTUTAN" from an employer → income, reimbursement
+- "ANGPAU" / "ANG PAO" / "DUIT RAYA" / "红包" / "GIFT" (credit/+) → income, gift;  "LUCKY DRAW" / "PRIZE" / "WINNER" / "CONTEST" → income, prize
+- Affiliate commission — "INVOLVE ASIA", "SHOPEE AFFILIATE", "LAZADA AFFILIATE", "ACCESSTRADE", "TIKTOK AFFILIATE", "COMMISSION", "KOMISEN" (credit/+) → income, commission, ledger "business"
+- Share / unit-trust / crypto SALE proceeds (credit/+) → income, capital_gain
 - "DIRECT DEBIT" (debit/-) → expense (check merchant for category)
 - "LOAN INSTALLMENT" / "HIRE PURCHASE" / "Ansuran" / "HP PAYMENT" → expense, loan_repayment
 - "DIVIDEND PAYMENT" / "ASB DIVIDEND" / "ASNB" / "Tabung Haji DIVIDEN" → income, dividend
@@ -129,10 +155,13 @@ Specific patterns (apply only after confirming direction above):
 - "OWN ACCOUNT TRANSFER" / "WITHIN ACCOUNT" / counterparty = account holder's own name → transfer
 
 BUSINESS (SIDE-HUSTLE) DETECTION — many Malaysians run Shopee/TikTok shops or stalls:
-- Marketplace PAYOUTS (credit/+) → income, business_income, ledger = "business":
+- Marketplace PAYOUTS (credit/+) → income, marketplace_payout, ledger = "business":
   payer contains AIRPAY, SHOPEE, SPX, SHOPEEPAY MERCHANT, LAZADA, TIKTOK, TIKTOK SHOP,
   BYTEDANCE, ECART, MONEYMATCH, XENDIT, IPAY88, BILLPLZ, STRIPE PAYOUT, GRABFOOD MERCHANT,
   FOODPANDA / DELIVERY HERO payout
+- Direct payment from a business CUSTOMER (company name, invoice/INV no., "PAYMENT FOR ORDER") (credit/+) → income, sales, ledger = "business"
+- Payment for a service rendered (consulting, repair, installation, design, rental of equipment) → income, service_income, ledger = "business"
+- Use business_income only for business money that fits none of the above
 - Business SUPPLIES (debit/-) → ledger = "business" with best-fit category:
   descriptions mentioning "stok"/"stock", "supplier", "borong"/"wholesale", "packaging",
   "kotak"/"boxes", "bubble wrap", "POS system", "Shopee Ads", "TikTok Ads", "Facebook Ads"
@@ -294,7 +323,7 @@ The +/- sign or Credit/Debit column is the SINGLE MOST IMPORTANT signal for dete
 - "INTER-BANK PAYMENT INTO A/C [name]" with positive amount → income (NOT transfer), UNLESS [name] is the account holder's own name → transfer
 - E-wallet reloads (TNG TOPUP, GRABPAY TOPUP...) on the DEBIT side → type "transfer" with to_account_name = the wallet (see E-WALLET RULES)
 - Look at the payee/payer name to pick the best category:
-  marketplace payout names (AIRPAY, SHOPEE, LAZADA, TIKTOK, ECART, MONEYMATCH, XENDIT) → business_income + ledger "business" (for credits)
+  marketplace payout names (AIRPAY, SHOPEE, LAZADA, TIKTOK, ECART, MONEYMATCH, XENDIT) → marketplace_payout + ledger "business" (for credits)
   supplier / vendor / company name (debit) → other_expense
   person name (credit) → other_income; (debit) → other_expense
   payroll/salary context → salary

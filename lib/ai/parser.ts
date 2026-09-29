@@ -105,13 +105,12 @@ const VALID_EXPENSE_CATEGORIES = new Set([
 ])
 
 const VALID_INCOME_CATEGORIES = new Set([
-  'salary','bonus','freelance','business_income','rental_income',
-  'dividend','interest','epf_withdrawal','government_aid','other_income',
+  'salary','bonus','allowance','reimbursement','freelance','business_income','marketplace_payout','sales','service_income','commission','rental_income','dividend','interest','capital_gain','cashback','refund','tax_refund','insurance_claim','gift','prize','government_aid','epf_withdrawal','other_income',
 ])
 
 // Income categories that signal a business transaction
 const BUSINESS_INCOME_CATEGORIES = new Set([
-  'business_income', 'rental_income', 'freelance',
+  'business_income', 'marketplace_payout', 'sales', 'service_income', 'commission', 'rental_income', 'freelance',
 ])
 
 function sanitiseTransaction(raw: Record<string, unknown>): ParsedTransaction {

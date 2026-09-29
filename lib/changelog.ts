@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.105'
+export const APP_VERSION = '1.106'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.106',
+    date: '2026-09-29',
+    title: '💰 新增 13 个收入类别 + 信用卡还款不再算收入/支出',
+    changes: [
+      '✨ 收入类别从 10 个扩到 23 个 —— 工作：津贴、报销；生意：平台结算、直销收入、服务收入、佣金/联盟；投资：投资获利；返还：返现/回扣、退款、退税、保险赔付；其他：红包/礼金、中奖/奖品',
+      '🤖 AI 自动识别：CASH REBATE/CASHBACK→返现，REFUND→退款，AIRPAY/ECART/TIKTOK→平台结算，Involve Asia 等→佣金，LHDN→退税，保险公司 CLAIM→保险赔付，ANGPAU/DUIT RAYA→红包',
+      '🐛 信用卡对账单的「PAYMENT REC'D WITH THANKS」原本被当成收入（UOB 一笔就虚增 RM4,400）；现识别为转账 → 该信用卡，欠款正确减少',
+      '🐛 银行对账单的「CREDIT CARD PAYMENT」原本被当成支出，与卡上的消费重复计算；现识别为转账 → 你的信用卡户口（自动对应到 UOB ONE 等真实户口，不再乱建新户口）',
+      '🔗 卡对账单没写从哪个银行付款时，来源先留空；之后导入那个银行的对账单会自动合并并补上来源',
+      '🐛 修正预览把对账单户口套到每一行来源上，导致「转入」变成「UOB ONE → UOB ONE」自己转自己',
+      '📌 平台结算（marketplace_payout）为新类别；历史上记为「商业收入」的平台款项保持不变',
+    ],
+  },
   {
     version: '1.105',
     date: '2026-09-29',
