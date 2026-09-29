@@ -24,6 +24,7 @@ interface Txn {
   transaction_date: string
   transaction_time: string | null
   account_name: string
+  to_account_name?: string | null
   ledger?: LedgerType
 }
 
@@ -31,9 +32,11 @@ interface Props {
   txn: Txn
   lang: LangCode
   showDate?: boolean // account detail page groups by month, so rows must carry their date
+  /** Render from this account's point of view: a transfer INTO it shows as +. */
+  viewAccount?: string
 }
 
-export default function TransactionRow({ txn, lang, showDate }: Props) {
+export default function TransactionRow({ txn, lang, showDate, viewAccount }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [localTxn, setLocalTxn] = useState(txn)
@@ -54,9 +57,16 @@ export default function TransactionRow({ txn, lang, showDate }: Props) {
     : undefined
   const customMeta = !cat && catValue ? customCats.find(c => c.slug === catValue) : undefined
   const icon = cat?.icon ?? customMeta?.icon ?? (localTxn.type === 'income' ? '💰' : localTxn.type === 'transfer' ? '🔄' : '💸')
+  const incoming = localTxn.type === 'transfer' && !!viewAccount
+    && localTxn.to_account_name === viewAccount && localTxn.account_name !== viewAccount
+  const transferLabel = viewAccount
+    ? (incoming ? `← ${localTxn.account_name}` : `→ ${localTxn.to_account_name ?? ''}`)
+    : 'Transfer'
+  const positive = localTxn.type === 'income' || incoming
+  const cur = localTxn.currency && localTxn.currency !== 'MYR' ? localTxn.currency : 'RM'
   const label = catValue
     ? (cat ? getCategoryLabel(catValue, localTxn.type, lang) : (customMeta?.label ?? catValue))
-    : (localTxn.type === 'transfer' ? 'Transfer' : '')
+    : (localTxn.type === 'transfer' ? transferLabel : '')
   const name = localTxn.merchant_name ?? localTxn.description ?? label ?? 'Unnamed'
 
   const isSelected = batch.active && batch.selected.has(localTxn.id)
@@ -102,9 +112,9 @@ export default function TransactionRow({ txn, lang, showDate }: Props) {
         </div>
         <p className={cn(
           'text-sm font-semibold shrink-0',
-          localTxn.type === 'income' ? 'text-emerald-600' : 'text-foreground'
+          positive ? 'text-emerald-600' : 'text-foreground'
         )}>
-          {localTxn.type === 'income' ? '+' : '−'}RM {Number(localTxn.amount).toFixed(2)}
+          {positive ? '+' : '−'}{cur} {Number(localTxn.amount).toFixed(2)}
         </p>
         {!batch.active && (
           <div onClick={e => e.stopPropagation()}>

@@ -88,8 +88,12 @@ export default async function TransactionsPage({ searchParams }: Props) {
     : (txns ?? [])
 
   // Month summary — internal transfers excluded from both income and expense
-  const totalIncome = txns?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
-  const totalExpense = txns?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0
+  // Sums are MYR-only. Foreign rows are converted at parse time; any that
+  // couldn't be (no FX rate) stay listed but are excluded here and flagged.
+  const isMYR = (t: Record<string, unknown>) => ((t.currency as string | null) ?? 'MYR') === 'MYR'
+  const foreignCount = txns?.filter(t => !isMYR(t)).length ?? 0
+  const totalIncome = txns?.filter(t => t.type === 'income' && isMYR(t)).reduce((s, t) => s + Number(t.amount), 0) ?? 0
+  const totalExpense = txns?.filter(t => t.type === 'expense' && isMYR(t)).reduce((s, t) => s + Number(t.amount), 0) ?? 0
 
   // Group by date (use filtered list)
   const groups: Record<string, typeof filtered> = {}
@@ -173,6 +177,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           </span>
           <span className="text-muted-foreground ml-auto">
             {txns?.length} {t.txn_records}
+            {foreignCount > 0 && <span className="ml-1 text-amber-600">（{foreignCount} 笔外币未计入合计）</span>}
           </span>
         </div>
       )}
@@ -202,7 +207,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   RM {groups[dateStr]!
-                    .reduce((s, txn) => txn.type === 'income' ? s + Number(txn.amount)
+                    .reduce((s, txn) => !isMYR(txn) ? s : txn.type === 'income' ? s + Number(txn.amount)
                       : txn.type === 'expense' ? s - Number(txn.amount)
                       : s, 0)  // transfers move money between own accounts — not spending
                     .toFixed(2)}

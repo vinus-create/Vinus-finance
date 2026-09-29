@@ -29,18 +29,43 @@ export default async function AccountDetailPage({ params }: Props) {
 
   if (!account) notFound()
 
-  // Fetch transactions by account_name
-  const { data: transactions } = await supabase
-    .from('transactions')
-    .select('id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, transaction_time, account_name, ledger')
-    .eq('user_id', user.id)
-    .eq('account_name', account.name)
-    .order('transaction_date', { ascending: false })
-    .order('transaction_time', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .limit(200)
+  // Everything that moves this account's balance: rows booked ON it, plus
+  // transfers INTO it (to_account_name). The balance trigger credits both, so
+  // listing only account_name made balance and history disagree.
+  // Two queries instead of .or(): account names contain "(", "," etc. that
+  // would need PostgREST quoting.
+  const cols = 'id, type, amount, currency, description, merchant_name, expense_category, income_category, transaction_date, transaction_time, account_name, to_account_name, ledger, created_at'
+  const [{ data: booked }, { data: incoming }] = await Promise.all([
+    supabase.from('transactions').select(cols)
+      .eq('user_id', user.id).eq('account_name', account.name)
+      .order('transaction_date', { ascending: false }).limit(200),
+    supabase.from('transactions').select(cols)
+      .eq('user_id', user.id).eq('type', 'transfer').eq('to_account_name', account.name)
+      .order('transaction_date', { ascending: false }).limit(200),
+  ])
+  const seen = new Set<string>()
+  const txns = [...(booked ?? []), ...(incoming ?? [])]
+    .filter(r => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    .sort((a, b) =>
+      b.transaction_date.localeCompare(a.transaction_date)
+      || (b.transaction_time ?? '').localeCompare(a.transaction_time ?? '')
+      || String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 200)
 
-  const txns = transactions ?? []
+  // Signed effect of one row on THIS account (MYR only — unconverted foreign
+  // rows are shown but not summed).
+  const effect = (r: { type: string; amount: number; currency: string | null; account_name: string; to_account_name: string | null }) => {
+    if ((r.currency ?? 'MYR') !== 'MYR') return 0
+    const amt = Number(r.amount)
+    if (r.type === 'income') return amt
+    if (r.type === 'expense') return -amt
+    if (r.type === 'transfer') {
+      const out = r.account_name === account.name
+      const inn = r.to_account_name === account.name
+      return out && !inn ? -amt : inn && !out ? amt : 0
+    }
+    return 0
+  }
 
   // Group by month
   const groups = txns.reduce<Record<string, typeof txns>>((acc, txn) => {
@@ -52,6 +77,10 @@ export default async function AccountDetailPage({ params }: Props) {
 
   const cfg = ACCOUNT_TYPE_CONFIG[account.account_type as keyof typeof ACCOUNT_TYPE_CONFIG]
   const isNegative = account.balance < 0
+  // A credit card's negative balance is money owed — label it as such
+  // instead of showing a "−" under the word 余额.
+  const isCardDebt = account.account_type === 'credit_card' && isNegative
+  const OWED_LABEL = { zh: '欠款', en: 'Amount owed', ms: 'Baki tertunggak' } as const
 
   return (
     <div className="pb-28">
@@ -75,9 +104,11 @@ export default async function AccountDetailPage({ params }: Props) {
             </p>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mb-0.5">{t.account_balance_label}</p>
+        <p className="text-xs text-muted-foreground mb-0.5">
+          {isCardDebt ? OWED_LABEL[lang as keyof typeof OWED_LABEL] ?? OWED_LABEL.en : t.account_balance_label}
+        </p>
         <p className={`text-2xl font-bold ${isNegative ? 'text-red-500' : ''}`}>
-          {isNegative ? '-' : ''}RM {Math.abs(account.balance).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+          {isNegative && !isCardDebt ? '-' : ''}RM {Math.abs(account.balance).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
         </p>
       </div>
 
@@ -90,8 +121,7 @@ export default async function AccountDetailPage({ params }: Props) {
             {Object.entries(groups).map(([monthKey, items]) => {
               const [y, m] = monthKey.split('-')
               const label = new Date(Number(y), Number(m) - 1).toLocaleDateString(lang, { year: 'numeric', month: 'long' })
-              const monthTotal = items.reduce((sum, txn) =>
-                txn.type === 'income' ? sum + txn.amount : txn.type === 'expense' ? sum - txn.amount : sum, 0)
+              const monthTotal = items.reduce((sum, txn) => sum + effect(txn), 0)
 
               return (
                 <div key={monthKey}>
@@ -108,6 +138,7 @@ export default async function AccountDetailPage({ params }: Props) {
                         txn={txn as unknown as Parameters<typeof TransactionRow>[0]['txn']}
                         lang={lang}
                         showDate
+                        viewAccount={account.name}
                       />
                     ))}
                   </div>

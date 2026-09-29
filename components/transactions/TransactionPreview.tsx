@@ -359,7 +359,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={cn('text-sm font-semibold', txn.type === 'income' ? 'text-emerald-600' : 'text-foreground')}>
-                      {txn.type === 'income' ? '+' : '-'}RM {txn.amount.toFixed(2)}
+                      {txn.type === 'income' ? '+' : '-'}{txn.currency && txn.currency !== 'MYR' ? txn.currency : 'RM'} {txn.amount.toFixed(2)}
                     </span>
                     <button onClick={() => setExpandedIdx(isExpanded ? null : origIdx)}
                       className="text-xs text-muted-foreground bg-background rounded-lg px-2 py-1 hover:bg-foreground/10">

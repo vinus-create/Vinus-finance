@@ -1,4 +1,5 @@
 import { getFlashModel, getFlashModelHQ } from './gemini'
+import { rateToMYR } from '@/lib/utils/fx'
 import { buildTextPrompt, buildImagePrompt, buildBankStatementPrompt, buildVoiceAudioPrompt, buildInvestmentStatementPrompt } from './prompts'
 import type { ExpenseCategory, IncomeCategory, TransactionType, LedgerType } from '@/lib/types/app.types'
 
@@ -218,13 +219,33 @@ function parseBankStatementJSON(text: string): {
 
 // ─── Parsers ────────────────────────────────────────────────────
 
+// ─── Currency normalisation ───────────────────────────────────
+// Every account is MYR and the balance trigger adds/subtracts raw amounts, so a
+// foreign-currency row must be converted BEFORE it is saved — otherwise USD 20
+// would move a MYR balance by 20. Original amount + rate kept in description.
+// If no rate is available the row keeps its currency, so it stays visible
+// (UI shows the code, totals exclude it) instead of being silently wrong.
+async function toMYR(txns: ParsedTransaction[]): Promise<ParsedTransaction[]> {
+  for (const t of txns) {
+    const cur = (t.currency || 'MYR').trim().toUpperCase()
+    if (cur === 'MYR' || cur === 'RM') { t.currency = 'MYR'; continue }
+    const rate = await rateToMYR(cur)
+    if (!rate) { t.currency = cur; continue }
+    const note = `${cur} ${t.amount.toFixed(2)} @ ${rate.toFixed(4)}`
+    t.amount = Math.round(t.amount * rate * 100) / 100
+    t.currency = 'MYR'
+    t.description = t.description ? `${t.description} (${note})` : note
+  }
+  return txns
+}
+
 export async function parseTextTransaction(input: string): Promise<ParseResult> {
   try {
     const model = await getFlashModel()
     const result = await withRetry(() => model.generateContent(buildTextPrompt(input)))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
-    return { success: true, transactions, source: 'text' }
+    return { success: true, transactions: await toMYR(transactions), source: 'text' }
   } catch (err) {
     console.error('[parseTextTransaction]', err)
     return { success: false, transactions: [], source: 'text', error: String(err) }
@@ -243,7 +264,7 @@ export async function parseImageTransaction(
     ]))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
-    return { success: true, transactions, source: 'image' }
+    return { success: true, transactions: await toMYR(transactions), source: 'image' }
   } catch (err) {
     console.error('[parseImageTransaction]', err)
     return { success: false, transactions: [], source: 'image', error: String(err) }
@@ -263,7 +284,7 @@ export async function parseVoiceAudioTransaction(
     ]))
     const text = result.response.text()
     const transactions = parseGeminiJSON(text)
-    return { success: true, transactions, source: 'voice' }
+    return { success: true, transactions: await toMYR(transactions), source: 'voice' }
   } catch (err) {
     console.error('[parseVoiceAudioTransaction]', err)
     return { success: false, transactions: [], source: 'voice', error: String(err) }
@@ -301,7 +322,7 @@ export async function parsePDFTransaction(base64Data: string): Promise<ParseResu
 
     if (!srcDoc || pageCount <= PDF_CHUNK_THRESHOLD) {
       const { transactions, accountInfo } = await parsePDFSingle(base64Data)
-      return { success: true, transactions, source: 'pdf', accountInfo }
+      return { success: true, transactions: await toMYR(transactions), source: 'pdf', accountInfo }
     }
 
     // Chunked parse: split into PDF_CHUNK_SIZE-page sub-documents (zero overlap)
@@ -331,7 +352,7 @@ export async function parsePDFTransaction(base64Data: string): Promise<ParseResu
       }
     }
 
-    return { success: true, transactions: allTransactions, source: 'pdf', accountInfo }
+    return { success: true, transactions: await toMYR(allTransactions), source: 'pdf', accountInfo }
   } catch (err) {
     console.error('[parsePDFTransaction]', err)
     return { success: false, transactions: [], source: 'pdf', error: String(err) }
@@ -350,7 +371,7 @@ export async function parseBankStatementImage(
     ]))
     const text = result.response.text()
     const { transactions, accountInfo } = parseBankStatementJSON(text)
-    return { success: true, transactions, source: 'pdf', accountInfo }
+    return { success: true, transactions: await toMYR(transactions), source: 'pdf', accountInfo }
   } catch (err) {
     console.error('[parseBankStatementImage]', err)
     return { success: false, transactions: [], source: 'pdf', error: String(err) }

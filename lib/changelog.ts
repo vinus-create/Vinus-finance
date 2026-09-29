@@ -5,9 +5,23 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.104'
+export const APP_VERSION = '1.105'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.105',
+    date: '2026-09-29',
+    title: '🔍 算法审计收尾：户口转入可见 + 外币自动换算 + 信用卡欠款显示',
+    changes: [
+      '🐛 户口详情页只列 account_name = 本户口的交易，转入（to_account_name）完全不显示，但余额已经加上 → 余额与明细对不上。Public Bank 有 8 笔共 RM46,000 的转入是隐形的，共 9 个户口受影响',
+      '🔧 户口页同时列出转入交易，按本户口视角显示方向（← 来源户口 显示 +，→ 目标户口 显示 −），月小计按方向计入转账',
+      '🐛 所有金额原本不分币种直接相加，且余额触发器会把 USD 20 当 RM 20 加减',
+      '🔧 AI 解析出口统一换算：外币按实时汇率（Yahoo，缓存 12 小时）转成 MYR 再入库，原币金额与汇率写进描述；覆盖 App 导入、Telegram、WhatsApp 全部入口',
+      '🛡️ 汇率拿不到时保留原币种不瞎换算：列表显示币种代码，合计排除并提示「N 笔外币未计入合计」',
+      '💳 信用卡负余额显示为「欠款 RM x」，不再是「余额 −RM x」',
+      '✅ 已修正 HSBC 历史数据：+2,139.89 → −2,139.89（净资产修正为 RM 76,129.61）',
+    ],
+  },
   {
     version: '1.104',
     date: '2026-09-29',

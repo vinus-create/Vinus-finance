@@ -53,6 +53,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     const { data: d1, error: e1 } = await supabase
       .from('transactions')
       .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id, ledger')
+      .eq('currency', 'MYR')  // unconverted foreign rows would be summed as MYR
       .eq('user_id', user.id)
       .gte('transaction_date', startOfMonth)
       .lte('transaction_date', endOfMonth)
@@ -61,6 +62,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       const { data: d2 } = await supabase
         .from('transactions')
         .select('type, amount, expense_category, income_category, description, merchant_name, transaction_date, id')
+        .eq('currency', 'MYR')  // unconverted foreign rows would be summed as MYR
         .eq('user_id', user.id)
         .gte('transaction_date', startOfMonth)
         .lte('transaction_date', endOfMonth)
