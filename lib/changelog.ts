@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.106'
+export const APP_VERSION = '1.107'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.107',
+    date: '2026-09-30',
+    title: '🔐 安全修复 + 定时任务终于能运行',
+    changes: [
+      '🚨 所有定时任务（保活、提醒通知）一直被登录拦截重定向到 /login，从未执行过 —— proxy 放行 /api/cron（路由自身用 CRON_SECRET 鉴权）。v1.101 的保活与 v1.102 的提醒修复此前实际都没生效',
+      '🔐 AI 每日建议接口原本信任网址里的 user_id 并用 service key 查询，任何登录用户都能读取他人收支概况；改为只认当前登录身份，并启用 RLS 查询',
+      '🔐 Telegram webhook 新增 secret token 校验、WhatsApp webhook 新增 Meta 签名校验，防止伪造消息往账户里写假交易（配置密钥环境变量后生效，未配置时行为不变）',
+    ],
+  },
   {
     version: '1.106',
     date: '2026-09-29',

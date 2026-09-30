@@ -232,7 +232,7 @@ function AiTipWidget({ userId }: { userId: string }) {
         const cached = sessionStorage.getItem(cacheKey())
         if (cached) { setTip(cached); return }
       }
-      const res = await fetch(`/api/ai/daily-tip?user_id=${userId}&t=${forceRefresh ? Date.now() : ''}`)
+      const res = await fetch(`/api/ai/daily-tip?t=${forceRefresh ? Date.now() : ''}`)
       const { tip: newTip } = await res.json()
       if (newTip) {
         // Store under a timestamped key so next auto-load gets fresh tip

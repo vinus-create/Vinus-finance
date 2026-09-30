@@ -1,7 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram', '/api/pwa-icon', '/api/admin', '/admin']
+// /api/cron: Vercel cron sends no session cookie — without this every cron was
+// 307-redirected to /login and never ran. The routes authenticate via CRON_SECRET.
+const PUBLIC_PATHS = ['/login', '/register', '/verify', '/api/auth', '/api/whatsapp', '/api/telegram', '/api/pwa-icon', '/api/admin', '/admin', '/api/cron']
 // Auth-required but exempt from "redirect logged-in users away" rule
 const AUTH_EXEMPT = ['/onboarding']
 

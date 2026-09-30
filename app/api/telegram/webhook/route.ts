@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
+import { safeEqual } from '@/lib/utils/webhook-auth'
 
 // Allow function to run up to 60s (Vercel default = 10s, kills slow voice parsing)
 export const maxDuration = 60
@@ -143,6 +144,13 @@ function formatPreview(txn: any): string {
 // ─── Main webhook handler ─────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  // Telegram echoes the secret_token given to setWebhook in this header. Enforced
+  // once TELEGRAM_WEBHOOK_SECRET is set (then re-register the webhook with it).
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+  if (webhookSecret && !safeEqual(request.headers.get('x-telegram-bot-api-secret-token'), webhookSecret)) {
+    return NextResponse.json({ ok: false }, { status: 401 })
+  }
+
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ ok: true }) }
 

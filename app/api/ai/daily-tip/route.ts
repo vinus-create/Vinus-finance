@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getFlashModelText } from '@/lib/ai/gemini'
 
 export const maxDuration = 30
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('user_id')
-  if (!userId) return NextResponse.json({ tip: null }, { status: 400 })
+  // Identity comes from the session, never from the URL: this route used to take
+  // ?user_id= and read with the service-role client, so any logged-in user could
+  // pull anyone's income/expense summary. The session client also keeps RLS on.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ tip: null }, { status: 401 })
+  const userId = user.id
 
   try {
-    const supabase = createAdminClient()
     const now = new Date()
     const year = now.getFullYear()
     const month = now.getMonth() + 1

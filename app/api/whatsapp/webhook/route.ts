@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
+import { verifyMetaSignature } from '@/lib/utils/webhook-auth'
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'vinus-finance-verify'
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID
@@ -20,8 +21,16 @@ export async function GET(request: NextRequest) {
 
 // ─── POST: Incoming messages ──────────────────────────────────
 export async function POST(request: NextRequest) {
+  // Meta signs every delivery with the app secret. Enforced once
+  // WHATSAPP_APP_SECRET is set — otherwise anyone could forge a message.
+  const raw = await request.text()
+  const appSecret = process.env.WHATSAPP_APP_SECRET
+  if (appSecret && !verifyMetaSignature(raw, request.headers.get('x-hub-signature-256'), appSecret)) {
+    return NextResponse.json({ status: 'forbidden' }, { status: 401 })
+  }
+
   let body: Record<string, unknown>
-  try { body = await request.json() } catch { return NextResponse.json({ status: 'ok' }) }
+  try { body = JSON.parse(raw) } catch { return NextResponse.json({ status: 'ok' }) }
 
   const entry = (body.entry as unknown[])?.[0] as Record<string, unknown>
   const changes = (entry?.changes as unknown[])?.[0] as Record<string, unknown>
