@@ -8,6 +8,7 @@ import { totalRelief } from '@/lib/utils/tax-calc'
 import type { TaxFormType } from '@/lib/types/app.types'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
+import { nowMY } from '@/lib/utils/date'
 
 interface Props {
   searchParams: Promise<{ year?: string }>
@@ -21,7 +22,7 @@ export default async function TaxPage({ searchParams }: Props) {
   const { t } = await getServerTranslations()
   const { year: yearParam } = await searchParams
 
-  const thisYear = new Date().getFullYear()
+  const thisYear = nowMY().year
   const assessmentYear = yearParam ? parseInt(yearParam, 10) : thisYear - 1
 
   // Fetch profile for tax form type

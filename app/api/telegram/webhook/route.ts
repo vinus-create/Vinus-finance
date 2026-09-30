@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTextTransaction, parseImageTransaction, parseVoiceAudioTransaction } from '@/lib/ai/parser'
 import { safeEqual } from '@/lib/utils/webhook-auth'
+import { todayMY, nowMY } from '@/lib/utils/date'
 
 // Allow function to run up to 60s (Vercel default = 10s, kills slow voice parsing)
 export const maxDuration = 60
@@ -125,8 +126,9 @@ function decodeTxn(data: string): {
   const category = parts[2] || 'other_expense'
   const name = parts[3] || ''
   const mmdd = parts[4] || ''
-  const year = new Date().getFullYear()
-  const date = mmdd ? `${year}-${mmdd}` : new Date().toISOString().slice(0, 10)
+  // Malaysia date: the server is UTC, so before 08:00 MYT this used to book yesterday
+  const year = nowMY().year
+  const date = mmdd ? `${year}-${mmdd}` : todayMY()
   const lt = parts[5] || 'p0'
   const ledger = lt[0] === 'b' ? 'business' : 'personal'
   const isTax = lt[1] === '1'

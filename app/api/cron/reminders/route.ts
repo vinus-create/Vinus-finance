@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPushToSubscriptions } from '@/lib/notifications/push'
 import { sendReminderEmail } from '@/lib/notifications/email'
+import { todayMY } from '@/lib/utils/date'
 
 export const runtime = 'nodejs'
 
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
     const dueDate = new Date(reminder.due_date + 'T00:00:00')
     const notifyDate = addDays(dueDate, -(reminder.days_before ?? 1))
     const notifyDateStr = localDateStr(notifyDate)
-    const todayStr = localDateStr(today)
+    const todayStr = todayMY()  // Malaysia date regardless of when the cron fires
 
     if (notifyDateStr !== todayStr) continue  // not today
 

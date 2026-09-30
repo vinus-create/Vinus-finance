@@ -13,6 +13,7 @@ import TransactionSearch from '@/components/transactions/TransactionSearch'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
+import { todayMY, nowMY } from '@/lib/utils/date'
 
 interface Props {
   searchParams: Promise<{ month?: string; new?: string; ledger?: string; q?: string }>
@@ -27,9 +28,8 @@ export default async function TransactionsPage({ searchParams }: Props) {
   const { t, lang } = await getServerTranslations()
 
   // Parse month param, default to current month
-  const now = new Date()
-  let year = now.getFullYear()
-  let month = now.getMonth() + 1
+  // Malaysia calendar, not the server's UTC (else 00:00–07:59 MYT on the 1st shows last month)
+  let { year, month } = nowMY()
   if (params.month && /^\d{4}-\d{2}$/.test(params.month)) {
     const [y, m] = params.month.split('-').map(Number)
     year = y
@@ -106,13 +106,8 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
   function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T00:00:00')
-    // Build today/yesterday strings without toISOString() to avoid UTC shift
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-    const yest = new Date(now); yest.setDate(yest.getDate() - 1)
-    const yestStr = `${yest.getFullYear()}-${pad(yest.getMonth() + 1)}-${pad(yest.getDate())}`
-    if (dateStr === todayStr) return t.txn_today
-    if (dateStr === yestStr) return t.txn_yesterday
+    if (dateStr === todayMY()) return t.txn_today
+    if (dateStr === todayMY(-1)) return t.txn_yesterday
     return d.toLocaleDateString(DATE_LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' })
   }
 

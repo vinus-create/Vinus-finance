@@ -10,6 +10,7 @@ import { calcEpfSocso } from '@/lib/utils/epf-socso'
 import { calcPcb } from '@/lib/utils/pcb'
 import type { Account } from '@/lib/types/app.types'
 import { cn } from '@/lib/utils'
+import { todayMY } from '@/lib/utils/date'
 
 // ── Toggle helper ─────────────────────────────────────────────
 function Toggle({ active, onClick, disabled }: { active: boolean; onClick: () => void; disabled?: boolean }) {
@@ -27,7 +28,7 @@ export default function PayslipPage() {
   const [isMarried, setIsMarried] = useState(false)
   const [accountName, setAccountName] = useState('')
   const [accounts, setAccounts] = useState<Account[]>([])
-  const [txDate, setTxDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [txDate, setTxDate] = useState(() => todayMY())
   const [employer, setEmployer] = useState('')
 
   // Toggles

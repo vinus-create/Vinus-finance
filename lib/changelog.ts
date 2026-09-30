@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const APP_VERSION = '1.107'
+export const APP_VERSION = '1.108'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.108',
+    date: '2026-09-30',
+    title: '🕐 全面修正时区：凌晨记账不再跑到昨天',
+    changes: [
+      '🐛 13 处默认日期用 toISOString()（UTC），马来西亚 00:00–07:59 记账会变成昨天：转账、还贷、付账单、应收款、储蓄目标、工资单、股票红利、首页小工具等',
+      '🐛 Telegram 记账默认日期在服务器按 UTC 算，早上 8 点前记的账全记到昨天',
+      '🐛 主页 / 交易 / 预算 / 储蓄目标 / 税务 5 个页面按服务器 UTC 判断「本月」：每月 1 号早上 8 点前打开显示的是上个月；「今天/昨天」标签每天有 8 小时是错的',
+      '🐛 AI 解析用的「今天」日期在服务器实例冷启动时就固定了，热实例会一直用昨天的日期 → 改为每次调用现算',
+      '🔧 新增 lib/utils/date.ts（todayMY / nowMY），统一按 Asia/Kuala_Lumpur 计算',
+    ],
+  },
   {
     version: '1.107',
     date: '2026-09-30',

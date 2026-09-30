@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { StockHolding } from '@/lib/types/app.types'
 import type { PriceData } from './StocksClient'
+import { todayMY } from '@/lib/utils/date'
 
 // ─── EPF Annual Dividend Helper ───────────────────────────────
 
@@ -25,7 +26,7 @@ function EpfDividendButton({ holding }: { holding: StockHolding }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('未登录')
       const dividendAmt = parseFloat((holding.shares * r / 100).toFixed(2))
-      const today = new Date().toISOString().slice(0, 10)
+      const today = todayMY()
 
       // Update EPF balance
       await supabase.from('stock_holdings').update({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getFlashModelText } from '@/lib/ai/gemini'
+import { todayMY, nowMY } from '@/lib/utils/date'
 
 export const maxDuration = 30
 
@@ -14,9 +15,7 @@ export async function GET(request: NextRequest) {
   const userId = user.id
 
   try {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
+    const { year, month } = nowMY()  // Malaysia calendar, not the server's UTC
     const mm = String(month).padStart(2, '0')
     const lastDay = new Date(year, month, 0).getDate()
     const start = `${year}-${mm}-01`
@@ -30,8 +29,8 @@ export async function GET(request: NextRequest) {
         .eq('user_id', userId).eq('period_year', year).eq('period_month', month),
       supabase.from('reminders').select('title, amount, due_date')
         .eq('user_id', userId).eq('status', 'active')
-        .gte('due_date', now.toISOString().slice(0, 10))
-        .lte('due_date', new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)),
+        .gte('due_date', todayMY())
+        .lte('due_date', todayMY(7)),
       supabase.from('loans').select('name, monthly_payment, outstanding_balance')
         .eq('user_id', userId).eq('is_active', true).gt('outstanding_balance', 0),
     ])

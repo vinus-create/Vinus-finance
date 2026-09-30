@@ -14,6 +14,7 @@ import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import EmptyState from '@/components/ui/EmptyState'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
+import { todayMY, nowMY } from '@/lib/utils/date'
 
 interface Props {
   searchParams: Promise<{ month?: string }>
@@ -28,9 +29,9 @@ export default async function DashboardPage({ searchParams }: Props) {
   const { t, lang } = await getServerTranslations()
 
   // Parse month param, default to current month
-  const now = new Date()
-  let year = now.getFullYear()
-  let month = now.getMonth() + 1
+  const my = nowMY()  // Malaysia calendar, not the server's UTC
+  let year = my.year
+  let month = my.month
   if (params.month && /^\d{4}-\d{2}$/.test(params.month)) {
     const [y, m] = params.month.split('-').map(Number)
     year = y
@@ -99,9 +100,9 @@ export default async function DashboardPage({ searchParams }: Props) {
   const recent = txns?.slice(0, 5) ?? []
 
   // ── Widget data (parallel fetch) ──────────────────────────
-  const isCurrentMonth = year === now.getFullYear() && month === (now.getMonth() + 1)
-  const next7Days = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const isCurrentMonth = year === my.year && month === my.month
+  const next7Days = todayMY(7)
+  const todayStr = todayMY()
 
   const [billsRes, loansRes, budgetsRes, remindersRes] = await Promise.all([
     supabase.from('monthly_bills').select('amount, frequency_months').eq('user_id', user.id).eq('is_active', true),

@@ -12,6 +12,7 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 import EmptyState from '@/components/ui/EmptyState'
 import type { SavingsGoal } from '@/lib/types/app.types'
 import { cn } from '@/lib/utils'
+import { todayMY } from '@/lib/utils/date'
 
 const EMOJIS = ['🎯', '🏠', '🚗', '✈️', '💍', '🎓', '💻', '📱', '🏖️', '💰', '🎁', '🛒']
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
@@ -152,7 +153,7 @@ export default function SavingsGoalsClient({ active, completed, userDob }: Props
   function GoalCard({ goal }: { goal: SavingsGoal }) {
     const pct = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100))
     const remaining = Math.max(0, goal.target_amount - goal.current_amount)
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayMY()
     const isOverdue = !goal.is_completed && goal.target_date && goal.target_date < today
     const monthlyNeeded = calcMonthlyNeeded(goal)
     const monthsLeft = goal.target_date ? calcMonthsRemaining(goal.target_date) : null

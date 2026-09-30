@@ -5,11 +5,12 @@ import PageHeader from '@/components/layout/PageHeader'
 import { getServerTranslations } from '@/lib/i18n/server'
 import type { SavingsGoal } from '@/lib/types/app.types'
 import SavingsGoalsClient from './SavingsGoalsClient'
+import { nowMY } from '@/lib/utils/date'
 
 function monthsRemaining(targetDate: string): number {
-  const today = new Date()
-  const target = new Date(targetDate)
-  const months = (target.getFullYear() - today.getFullYear()) * 12 + (target.getMonth() - today.getMonth())
+  const { year, month } = nowMY()  // Malaysia calendar, not the server's UTC
+  const [ty, tm] = targetDate.split('-').map(Number)
+  const months = (ty - year) * 12 + (tm - month)
   return Math.max(0, months)
 }
 

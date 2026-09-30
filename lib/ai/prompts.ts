@@ -46,7 +46,10 @@ RULES:
 - ledger = "business" ONLY for clear business activity (marketplace payouts, stock/supply purchases); default "personal"
 `
 
-export const MALAYSIAN_CONTEXT = `
+// A function, not a const: the TODAY'S DATE line below used to be evaluated once
+// at module load, so a warm serverless instance kept yesterday's date for hours
+// and "today if not specified" transactions were booked on the wrong day.
+export const malaysianContext = () => `
 You are a financial transaction parser specialised for Malaysia. Apply these rules:
 
 CURRENCY PARSING:
@@ -182,7 +185,7 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_L
 
 // For parsing recorded audio (Malaysian rojak — handles code-switching)
 export function buildVoiceAudioPrompt(): string {
-  return `${MALAYSIAN_CONTEXT}
+  return `${malaysianContext()}
 
 You are listening to a Malaysian person describing a financial transaction via a SHORT voice clip (usually 2-5 seconds).
 The speaker uses ROJAK language — mixing Malay, English, and Chinese (Mandarin or Cantonese/Hokkien) freely. This is completely normal.
@@ -237,7 +240,7 @@ Return ONLY the JSON object, no explanation.`
 
 // For parsing a single transaction from text/voice
 export function buildTextPrompt(input: string): string {
-  return `${MALAYSIAN_CONTEXT}
+  return `${malaysianContext()}
 
 ${TRANSACTION_SCHEMA_DESCRIPTION}
 
@@ -255,7 +258,7 @@ Return ONLY the JSON object, no explanation.`
 
 // For parsing a receipt image / screenshot
 export function buildImagePrompt(): string {
-  return `${MALAYSIAN_CONTEXT}
+  return `${malaysianContext()}
 
 ${TRANSACTION_SCHEMA_DESCRIPTION}
 
@@ -287,7 +290,7 @@ NOTE — PARTIAL DOCUMENT: You are seeing PART ${chunk.index} of ${chunk.total} 
 `
     : ''
 
-  return `${MALAYSIAN_CONTEXT}
+  return `${malaysianContext()}
 
 You are parsing a Malaysian bank statement or e-wallet transaction history
 (Maybank, CIMB, Public Bank, RHB, Hong Leong, AmBank, Bank Islam, BSN, Affin,

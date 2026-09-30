@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { calcByMethod, calcBalanceAtMonth, advanceMonths } from '@/lib/utils/loan-math'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { Loan } from '@/lib/types/app.types'
+import { todayMY } from '@/lib/utils/date'
 
 interface Props {
   open: boolean
@@ -26,7 +27,7 @@ function blankForm() {
     principal_amount: '',
     interest_rate: '',
     tenure_years: '',
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: todayMY(),
     months_paid: '0',
   }
 }

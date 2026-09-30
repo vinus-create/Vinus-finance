@@ -12,6 +12,7 @@ import { useLang } from '@/lib/i18n/LanguageProvider'
 import EmptyState from '@/components/ui/EmptyState'
 import type { Receivable } from '@/lib/types/app.types'
 import { cn } from '@/lib/utils'
+import { todayMY } from '@/lib/utils/date'
 
 interface Props {
   unpaid: Receivable[]
@@ -62,7 +63,7 @@ export default function ReceivablesClient({ unpaid, paid }: Props) {
     const supabase = createClient()
     await supabase.from('receivables').update({
       is_paid: true,
-      paid_date: new Date().toISOString().slice(0, 10),
+      paid_date: todayMY(),
       updated_at: new Date().toISOString(),
     }).eq('id', id)
     router.refresh()
@@ -76,7 +77,7 @@ export default function ReceivablesClient({ unpaid, paid }: Props) {
   }
 
   function ReceivableCard({ item }: { item: Receivable }) {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayMY()
     const isOverdue = !item.is_paid && item.due_date && item.due_date < today
 
     return (

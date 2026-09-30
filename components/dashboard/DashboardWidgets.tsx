@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { todayMY } from '@/lib/utils/date'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ const MAX_DAILY_REFRESHES = 5
 
 function getRefreshCount(): number {
   try {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayMY()
     const raw = localStorage.getItem(`ai_tip_refreshes_${today}`)
     return raw ? parseInt(raw) : 0
   } catch { return 0 }
@@ -205,7 +206,7 @@ function getRefreshCount(): number {
 
 function incrementRefreshCount(): number {
   try {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayMY()
     const key = `ai_tip_refreshes_${today}`
     const next = getRefreshCount() + 1
     localStorage.setItem(key, String(next))

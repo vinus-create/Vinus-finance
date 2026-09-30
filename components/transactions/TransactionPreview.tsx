@@ -16,6 +16,7 @@ import { getCategoryLabel } from '@/lib/utils/category-i18n'
 import type { LangCode } from '@/lib/i18n'
 import SuccessCelebration from '@/components/ui/SuccessCelebration'
 import type { DetectedAccount } from './PDFParser'
+import { todayMY } from '@/lib/utils/date'
 
 interface Props {
   transactions: ParsedTransaction[]
@@ -170,7 +171,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
     if (!m) return dateStr
     const [, year, month, day] = m
     if (parseInt(month) > 12 && parseInt(day) <= 12) return `${year}-${day}-${month}`
-    if (parseInt(month) > 12) return new Date().toISOString().slice(0, 10)
+    if (parseInt(month) > 12) return todayMY()
     return dateStr
   }
 

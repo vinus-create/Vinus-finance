@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { calcPaymentSplit, advanceMonths } from '@/lib/utils/loan-math'
 import { useLang } from '@/lib/i18n/LanguageProvider'
 import type { Loan, Account } from '@/lib/types/app.types'
+import { todayMY } from '@/lib/utils/date'
 
 function accountEmoji(type: Account['account_type']): string {
   const map: Record<string, string> = { bank: '🏦', ewallet: '💳', investment: '📈', cash: '💵', credit_card: '💳', other: '🏧' }
@@ -28,7 +29,7 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
   const { t } = useLang()
   const [saving, setSaving] = useState(false)
   const [amount, setAmount] = useState(loan.monthly_payment.toFixed(2))
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(todayMY())
   const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccount, setSelectedAccount] = useState('Cash')
 
@@ -36,7 +37,7 @@ export default function MakePaymentSheet({ loan, open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return
     setAmount(loan.monthly_payment.toFixed(2))
-    setDate(new Date().toISOString().slice(0, 10))
+    setDate(todayMY())
 
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {

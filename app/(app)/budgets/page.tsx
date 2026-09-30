@@ -6,6 +6,7 @@ import BudgetsClient from '@/components/budgets/BudgetsClient'
 import type { ExpenseCategory } from '@/lib/types/app.types'
 import { getServerTranslations } from '@/lib/i18n/server'
 import { DATE_LOCALE } from '@/lib/i18n/index'
+import { nowMY } from '@/lib/utils/date'
 
 export default async function BudgetsPage() {
   const user = await getCachedUser()
@@ -14,10 +15,8 @@ export default async function BudgetsPage() {
 
   const { t, lang } = await getServerTranslations()
 
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const monthLabel = now.toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })
+  const { year, month } = nowMY()  // Malaysia calendar, not the server's UTC
+  const monthLabel = new Date(year, month - 1, 15).toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })
 
   // Build date strings directly — avoid toISOString() which shifts by UTC offset
   const mm = String(month).padStart(2, '0')

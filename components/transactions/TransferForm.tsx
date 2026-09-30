@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import type { Account } from '@/lib/types/app.types'
+import { todayMY } from '@/lib/utils/date'
 
 function accountEmoji(type: Account['account_type']): string {
   const map: Record<string, string> = { bank: '🏦', ewallet: '💳', investment: '📈', cash: '💵', credit_card: '💳', other: '🏧' }
@@ -21,7 +22,7 @@ export default function TransferForm({ onSaved }: Props) {
   const [fromAccount, setFromAccount] = useState('')
   const [toAccount, setToAccount] = useState('')
   const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(todayMY())
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5))
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
