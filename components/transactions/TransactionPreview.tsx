@@ -17,6 +17,7 @@ import type { LangCode } from '@/lib/i18n'
 import SuccessCelebration from '@/components/ui/SuccessCelebration'
 import type { DetectedAccount } from './PDFParser'
 import { todayMY } from '@/lib/utils/date'
+import { pickAccount } from '@/lib/utils/account-alias'
 
 interface Props {
   transactions: ParsedTransaction[]
@@ -82,7 +83,9 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
     ...(ingestMeta?.suspected ?? []).map(t => ({ ...t, certain: false })),
     ...(ingestMeta?.duplicates ?? []).map(t => ({ ...t, certain: true })),
   ])
-  const [createCandidate, setCreateCandidate] = useState(true)
+  // An unidentified bank ("Unknown Bank") should not silently become a new account
+  const unknownBank = /unknown|tidak diketahui|未知/i.test(ingestMeta?.candidateAccount?.suggested_name ?? '')
+  const [createCandidate, setCreateCandidate] = useState(!unknownBank)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
   const [customAccount, setCustomAccount] = useState<Record<number, string>>({})
   const [showCustomInput, setShowCustomInput] = useState<Record<number, boolean>>({})
@@ -110,7 +113,21 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('created_at', { ascending: true })
-    if (data && data.length > 0) setAccounts(data as Account[])
+    if (data && data.length > 0) {
+      const accts = data as Account[]
+      setAccounts(accts)
+      // Same strict mapping the save route applies, so the preview shows the
+      // account each row will really land in ("Touch n Go" → "TNG eWallet").
+      // Exact names (incl. the user's own picks) are never touched.
+      const creating = ingestMeta?.candidateAccount?.suggested_name
+      const fix = (n: string | null | undefined) =>
+        !n || n === creating || accts.some(a => a.name === n) ? n : (pickAccount(n, accts)?.name ?? n)
+      setEdited(prev => prev.map(t => ({
+        ...t,
+        account_name: fix(t.account_name) ?? t.account_name,
+        to_account_name: t.type === 'transfer' ? (fix(t.to_account_name) ?? null) : t.to_account_name,
+      })))
+    }
   }, [])
 
   useEffect(() => { loadAccounts() }, [loadAccounts])
@@ -306,6 +323,7 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
           <span className="text-base">{createCandidate ? '✅' : '⬜'}</span>
           <div>
             <p className="font-semibold">✨ 自动创建户口：{ingestMeta.candidateAccount.suggested_name}</p>
+            {unknownBank && <p className="text-amber-600">没认出是哪家银行 —— 建议不要新建，直接在下面「户口」里选你的户口</p>}
             <p className="opacity-80">
               {ingestMeta.candidateAccount.last4 && `••••${ingestMeta.candidateAccount.last4} · `}
               {ingestMeta.candidateAccount.closing_balance !== null
@@ -373,6 +391,17 @@ export default function TransactionPreview({ transactions, detectedAccount, inge
                       ? `${acctName || '?'} → ${txn.to_account_name || '?'}`
                       : (acctName || 'Cash')}</p>
                     <p className="text-xs text-muted-foreground">{txn.transaction_date}</p>
+                    {accounts.length > 0 && (() => {
+                      const creating = (!detectedAccount && createCandidate) ? ingestMeta?.candidateAccount?.suggested_name : null
+                      const known = (n?: string | null) => !n || n === creating || accounts.some(a => a.name === n)
+                      if (txn.type === 'transfer' && !known(txn.to_account_name)) return (
+                        <p className="text-[10px] text-amber-600">⚠️ 「{txn.to_account_name}」不是你的户口，保存会新建它 —— 如果是付给别人的钱，请改成「支出」</p>
+                      )
+                      if (!known(acctName)) return (
+                        <p className="text-[10px] text-amber-600">⚠️ 「{acctName}」不是你启用中的户口，保存会新建它 —— 点「编辑」可改成已有户口</p>
+                      )
+                      return null
+                    })()}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={cn('text-sm font-semibold', txn.type === 'income' ? 'text-emerald-600' : 'text-foreground')}>

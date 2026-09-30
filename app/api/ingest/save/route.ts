@@ -4,6 +4,7 @@ import { computeDedupHash } from '@/lib/utils/dedup'
 import { matchTransfersAgainstDb, type DbTxnLite } from '@/lib/utils/transfer-match'
 import { detectAndRecordLoanPayments, type InsertedTxnLite } from '@/lib/utils/loan-payment-detect'
 import { autoLinkTaxReliefs } from '@/lib/utils/tax-autolink'
+import { pickAccount, type AccountLite } from '@/lib/utils/account-alias'
 import type { IngestSaveRequest, SaveTransactionRow } from '@/lib/types/ingest.types'
 
 // ─── POST /api/ingest/save ────────────────────────────────────
@@ -36,10 +37,27 @@ export async function POST(request: NextRequest) {
 
   const { data: accountRows } = await supabase
     .from('accounts')
-    .select('id, name')
+    .select('id, name, institution, account_type, is_active')
     .eq('user_id', user.id)
   const existingNames = new Set((accountRows ?? []).map(a => a.name.toLowerCase()))
   const createdAccounts: string[] = []
+
+  // 0. Map AI-supplied names onto the user's ACTIVE accounts (only when there is
+  //    exactly one confident match). Without this, "Touch n Go" kept landing in a
+  //    deactivated auto-created account instead of "TNG eWallet", and those rows
+  //    vanished from every account page.
+  {
+    const active = (accountRows ?? []).filter(a => a.is_active) as AccountLite[]
+    const creating = body.createAccount?.suggested_name?.toLowerCase()
+    const remap = (n: string | null | undefined) => {
+      if (!n || n.toLowerCase() === creating) return n
+      return pickAccount(n, active)?.name ?? n
+    }
+    for (const t of rows) {
+      t.account_name = remap(t.account_name) ?? t.account_name
+      if (t.type === 'transfer') t.to_account_name = remap(t.to_account_name) ?? t.to_account_name
+    }
+  }
 
   // 1. Confirmed account auto-discovery (from a parsed statement header)
   if (body.createAccount && !existingNames.has(body.createAccount.suggested_name.toLowerCase())) {

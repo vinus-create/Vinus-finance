@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { selectAll } from '@/lib/utils/select-all'
 
 export interface AdminStats {
   totalUsers: number
@@ -57,17 +58,19 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   const [
     { count: totalUsers },
-    { data: recentTxUsers },
+    recentTxUsers,
     { count: newUsers },
     { count: totalTx },
-    { data: volumeData },
+    volumeData,
     { count: telegramCount },
   ] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    supabase.from('transactions').select('user_id').gte('transaction_date', thirtyDaysAgo.slice(0, 10)),
+    selectAll<{ user_id: string }>((f, t) => supabase.from('transactions').select('user_id')
+      .gte('transaction_date', thirtyDaysAgo.slice(0, 10)).order('id').range(f, t)),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', startOfMonth),
     supabase.from('transactions').select('id', { count: 'exact', head: true }),
-    supabase.from('transactions').select('amount, currency').eq('type', 'expense'),
+    selectAll<{ amount: number; currency: string }>((f, t) => supabase.from('transactions').select('amount, currency')
+      .eq('type', 'expense').order('id').range(f, t)),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).not('telegram_id', 'is', null),
   ])
 
@@ -76,9 +79,10 @@ export async function getAdminStats(): Promise<AdminStats> {
     r.currency === 'MYR' ? sum + r.amount : sum, 0)
 
   // Distinct users who used AI parse and have stock holdings
-  const [{ data: aiUserRows }, { data: stockUserRows }] = await Promise.all([
-    supabase.from('transactions').select('user_id').not('merchant_name', 'is', null),
-    supabase.from('stock_holdings').select('user_id'),
+  const [aiUserRows, stockUserRows] = await Promise.all([
+    selectAll<{ user_id: string }>((f, t) => supabase.from('transactions').select('user_id')
+      .not('merchant_name', 'is', null).order('id').range(f, t)),
+    selectAll<{ user_id: string }>((f, t) => supabase.from('stock_holdings').select('user_id').order('id').range(f, t)),
   ])
   const aiParseUsers = new Set((aiUserRows ?? []).map((r: { user_id: string }) => r.user_id)).size
   const stockUsers = new Set((stockUserRows ?? []).map((r: { user_id: string }) => r.user_id)).size
@@ -101,7 +105,9 @@ export async function getAllUsers(page: number, q: string, status: string): Prom
   const offset = (page - 1) * pageSize
 
   // Get auth users (for emails)
-  const { data: authList } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+  // Always page 1 of auth users: `page` is the admin table's page, not auth's —
+  // passing it through blanked every email from table page 2 on.
+  const { data: authList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
   const emailMap = new Map<string, string>()
   for (const u of authList?.users ?? []) emailMap.set(u.id, u.email ?? '')
 
@@ -118,10 +124,11 @@ export async function getAllUsers(page: number, q: string, status: string): Prom
 
   // Get tx counts per user
   const ids = (profiles ?? []).map((p: { id: string }) => p.id)
-  const { data: txCounts } = await supabase
+  const txCounts = await selectAll<{ user_id: string }>((f, t) => supabase
     .from('transactions')
     .select('user_id')
     .in('user_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000'])
+    .order('id').range(f, t))
 
   const txMap = new Map<string, number>()
   for (const row of txCounts ?? []) txMap.set(row.user_id, (txMap.get(row.user_id) ?? 0) + 1)
@@ -235,10 +242,11 @@ export async function getNewUsersPerWeek(): Promise<Array<{ week: string; count:
 
 export async function getDailyTransactions(): Promise<Array<{ date: string; count: number }>> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+  const data = await selectAll<{ transaction_date: string }>((f, t) => supabase
     .from('transactions')
     .select('transaction_date')
     .gte('transaction_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+    .order('id').range(f, t))
 
   const buckets = new Map<string, number>()
   for (let i = 29; i >= 0; i--) {
@@ -254,10 +262,11 @@ export async function getDailyTransactions(): Promise<Array<{ date: string; coun
 
 export async function getMonthlyVolume(): Promise<Array<{ month: string; volume: number; txCount: number }>> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+  const data = await selectAll<{ transaction_date: string; amount: number; currency: string; type: string }>((f, t) => supabase
     .from('transactions')
     .select('transaction_date, amount, currency, type')
     .gte('transaction_date', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+    .order('id').range(f, t))
 
   const buckets = new Map<string, { volume: number; txCount: number }>()
   for (let i = 11; i >= 0; i--) {
@@ -283,11 +292,12 @@ export async function getMonthlyVolume(): Promise<Array<{ month: string; volume:
 
 export async function getTopCategories(): Promise<Array<{ category: string; total: number; count: number }>> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+  const data = await selectAll<{ expense_category: string; amount: number }>((f, t) => supabase
     .from('transactions')
     .select('expense_category, amount')
     .eq('type', 'expense')
     .not('expense_category', 'is', null)
+    .order('id').range(f, t))
 
   const map = new Map<string, { total: number; count: number }>()
   for (const row of data ?? []) {
@@ -305,7 +315,7 @@ export async function getTopCategories(): Promise<Array<{ category: string; tota
 
 export async function getTopUsers(): Promise<Array<{ id: string; full_name: string | null; email: string; tx_count: number }>> {
   const supabase = createAdminClient()
-  const { data: txData } = await supabase.from('transactions').select('user_id')
+  const txData = await selectAll<{ user_id: string }>((f, t) => supabase.from('transactions').select('user_id').order('id').range(f, t))
 
   const counts = new Map<string, number>()
   for (const row of txData ?? []) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1)

@@ -256,7 +256,7 @@ export async function parseImageTransaction(
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' = 'image/jpeg'
 ): Promise<ParseResult> {
   try {
-    const model = await getFlashModel()
+    const model = await getFlashModelHQ()  // admin 'HQ model (voice / images)' setting
     const result = await withRetry(() => model.generateContent([
       { text: buildImagePrompt() },
       { inlineData: { mimeType, data: base64Data } },
@@ -276,7 +276,7 @@ export async function parseVoiceAudioTransaction(
   mimeType: string,
 ): Promise<ParseResult> {
   try {
-    const model = await getFlashModel()
+    const model = await getFlashModelHQ()  // admin 'HQ model (voice / images)' setting
     const result = await withRetry(() => model.generateContent([
       { text: buildVoiceAudioPrompt() },
       { inlineData: { mimeType, data: base64Data } },

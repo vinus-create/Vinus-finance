@@ -105,8 +105,29 @@ export default function AddAccountSheet({ open, onOpenChange, account }: Props) 
         updated_at: new Date().toISOString(),
       }
 
+      // Transactions and bills reference accounts BY NAME and the balance trigger
+      // updates every account with that name — so two accounts may never share a
+      // name, and a rename must carry its history along.
+      const { data: sameName } = await supabase
+        .from('accounts').select('id').eq('user_id', user.id)
+        .ilike('name', payload.name.replace(/[\\%_]/g, '\\$&'))  // exact, case-insensitive
+      if ((sameName ?? []).some(a => a.id !== account?.id)) {
+        throw new Error(`已经有一个叫「${payload.name}」的户口了，请换个名字`)
+      }
+
       if (isEdit && account) {
-        const { error: e } = await supabase.from('accounts').update(payload).eq('id', account.id)
+        if (payload.name !== account.name) {
+          // Atomic rename (DB function): relabels this account's transactions and
+          // bill auto-deduct links in the same transaction, without moving money.
+          const { error: re } = await supabase.rpc('rename_account', { p_account_id: account.id, p_new_name: payload.name })
+          if (re) {
+            throw new Error(/rename_account|function|schema cache/i.test(re.message)
+              ? '改名需要先在 Supabase 运行 v1.109 的数据库更新 SQL（否则历史交易会和户口断开）'
+              : re.message)
+          }
+        }
+        const { name: _n, ...rest } = payload
+        const { error: e } = await supabase.from('accounts').update(rest).eq('id', account.id)
         if (e) throw new Error(e.message)
       } else {
         const { error: e } = await supabase.from('accounts').insert({ ...payload, user_id: user.id, is_active: true })

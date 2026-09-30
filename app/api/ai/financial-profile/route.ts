@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getFlashModel } from '@/lib/ai/gemini'
+import { selectAll } from '@/lib/utils/select-all'
+import { todayMY } from '@/lib/utils/date'
 
 export const maxDuration = 45
 
@@ -25,10 +27,12 @@ export async function POST() {
 
   const [profileRes, txnsRes, accountsRes, loansRes, goalsRes, epfRes] = await Promise.all([
     supabase.from('profiles').select('full_name, date_of_birth').eq('id', user.id).single(),
-    supabase.from('transactions')
+    // every row of the window (was .limit(500): once 6 months passed 500 rows the
+    // oldest months were silently dropped and the averages came out too low)
+    selectAll<{ type: string; amount: number; expense_category: string | null; income_category: string | null; transaction_date: string; ledger: string }>((f, t) => supabase.from('transactions')
       .select('type, amount, expense_category, income_category, transaction_date, ledger')
       .eq('user_id', user.id).gte('transaction_date', since6mStr)
-      .eq('ledger', 'personal').order('transaction_date', { ascending: false }).limit(500),
+      .eq('ledger', 'personal').order('transaction_date', { ascending: false }).order('id').range(f, t)),
     supabase.from('accounts').select('balance, account_type, include_in_net_worth').eq('user_id', user.id).eq('is_active', true),
     supabase.from('loans').select('outstanding_balance, monthly_payment, loan_type').eq('user_id', user.id).eq('is_active', true),
     supabase.from('savings_goals').select('target_amount, current_amount, is_completed').eq('user_id', user.id),
@@ -36,7 +40,7 @@ export async function POST() {
   ])
 
   const profile = profileRes.data
-  const txns = txnsRes.data ?? []
+  const txns = txnsRes
   const accounts = accountsRes.data ?? []
   const loans = loansRes.data ?? []
   const goals = goalsRes.data ?? []
@@ -55,10 +59,17 @@ export async function POST() {
     if (txn.type === 'income') incomeMonths.set(month, (incomeMonths.get(month) ?? 0) + Number(txn.amount))
     if (txn.type === 'expense') expenseMonths.set(month, (expenseMonths.get(month) ?? 0) + Number(txn.amount))
   }
-  const avgMonthlyIncome = incomeMonths.size > 0
-    ? Array.from(incomeMonths.values()).reduce((a, b) => a + b, 0) / incomeMonths.size : 0
-  const avgMonthlyExpense = expenseMonths.size > 0
-    ? Array.from(expenseMonths.values()).reduce((a, b) => a + b, 0) / expenseMonths.size : 0
+  // Average over COMPLETE months, with one shared denominator. The current month
+  // is still in progress (on the 5th it holds 5 days) and dragged both averages
+  // down; separate denominators also overstated irregular income (3 paid months
+  // divided by 3 instead of by the 6 months observed).
+  const thisMonth = todayMY().slice(0, 7)
+  const allMonths = new Set([...incomeMonths.keys(), ...expenseMonths.keys()])
+  const done = [...allMonths].filter(m => m !== thisMonth)
+  const avgMonths = done.length > 0 ? done : [...allMonths]   // brand-new user: use what exists
+  const sumOver = (m: Map<string, number>) => avgMonths.reduce((s, k) => s + (m.get(k) ?? 0), 0)
+  const avgMonthlyIncome = avgMonths.length > 0 ? sumOver(incomeMonths) / avgMonths.length : 0
+  const avgMonthlyExpense = avgMonths.length > 0 ? sumOver(expenseMonths) / avgMonths.length : 0
   const savingsRate = avgMonthlyIncome > 0
     ? Math.round(((avgMonthlyIncome - avgMonthlyExpense) / avgMonthlyIncome) * 100) : 0
 
